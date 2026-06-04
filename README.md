@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository was built as a portfolio project for **Eskwelabs Innovation Fellowship** Internship Program. As an EIF, the goal is of this project is "to help learners practice with datasets that feel close to real business, social impact, education, workforce, or operations problems without using sensitive or confidential real-world data."
+This repository was built as a portfolio project for **Eskwelabs Innovation Fellowship** Internship Program. As an EIF, the goal of this project is "to help learners practice with datasets that feel close to real business, social impact, education, workforce, or operations problems without using sensitive or confidential real-world data."
 
 We are asked to create a mathematical model, develop a dataset generator, use the generator to generate a dataset, carry out a sample EDA of the dataset, and create a challenge statement that can allow learners to practice with the dataset.
 
@@ -25,7 +25,7 @@ This project contains a synthetic data pipeline built in Python (`numpy`, `panda
 * Mac/Linux:
 ```python3 -m venv venv```
 
-#### Create a virtual environment
+#### Activate the virtual environment
 
 * Windows:
 ```venv\Scripts\activate```
