@@ -16,12 +16,13 @@ SIM_CONFIG = {
     "channels": ["Organic", "Facebook", "TikTok", "Direct"],
     "channel_weights": [0.40, 0.30, 0.20, 0.10],
     # session config
-    "peak_hours": [13, 21],
-    "session_base_min_seconds": 10,
-    "average_dropoff": 5,
     "session_count": [1, 2, 3, 4, 5, 8, 15],
     "session_count_weights": [0.65, 0.15, 0.08, 0.05, 0.04, 0.02, 0.01],
     "burst_session_weights": [0.70, 0.30],
+    "average_dropoff": 5,
+    "peak_hours": [13, 21],
+    "session_base_max_seconds": 300,
+    "session_base_min_seconds": 10,
     "os_distribution": ["Android", "iOS", "Windows", "macOS"],
     "os_weights": [0.40, 0.25, 0.20, 0.15],
     "android_software_version": ["14", "13", "12", "11"],
@@ -31,8 +32,8 @@ SIM_CONFIG = {
     "windows_software_version": ["11", "10"],
     "windows_software_version_weights": [0.7, 0.3],
     "macos_software_version": ["Sonoma", "Ventura", "Monterey"],
-    "session_base_max_seconds": 300,
     "savviness_time_reduction": 150,
+    # NOTE: think about the degredation of data more
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
     # add more specs here, according to the document
