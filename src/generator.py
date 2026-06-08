@@ -212,7 +212,7 @@ def generate_sessions(df_users: pd.DataFrame):
         }
     )
 
-    print("session table generated!")
+    print("sessions table generated!")
     return df_sessions
 
 
@@ -281,8 +281,42 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
         }
     )
 
-    print("event table generated")
+    print("events table generated!")
     return df_events
+
+
+def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
+    # only get purchase
+    purchase = df_events[df_events["event_type"] == "purchase"].copy()
+
+    purchase = purchase.merge(
+        df_sessions[["session_id", "user_id"]], on="session_id", how="left"
+    )
+
+    order_id = []
+    for _ in range(len(purchase)):
+        new_id = str(uuid.uuid4())
+        order_id.append(new_id)
+
+    session_id_fk = purchase["session_id"].tolist()
+
+    user_id_fk = purchase["user_id"].tolist()
+
+    order_timestamp = purchase["event_timestamp"].tolist()
+
+    order_total_amount = 0.0
+
+    # Generate basic order info, but LEAVE TOTAL BLANK for now
+    df_orders = pd.DataFrame(
+        {
+            "order_id": order_id,
+            "session_id": session_id_fk,
+            "user_id": user_id_fk,
+            "order_timestamp": order_timestamp,
+            "order_total_amount": order_total_amount,
+        }
+    )
+    return df_orders
 
 
 # TEST: FOR TESTING ONLY
@@ -290,6 +324,7 @@ if __name__ == "__main__":
     test_users_df = generate_users(20)
     test_sessions_df = generate_sessions(test_users_df)
     test_events_df = generate_events(test_sessions_df, test_users_df)
+    test_orders_df = generate_orders(test_events_df, test_sessions_df)
 
     print("\nTEST: GENERATED USERS")
     print(test_users_df)
@@ -300,6 +335,9 @@ if __name__ == "__main__":
     print("\nTEST: GENERATED EVENTS")
     print(test_events_df)
 
+    print("\nTEST: GENERATED ORDERS")
+    print(test_orders_df)
+
     print("\nTEST: DATA TYPES (USERS)")
     print(test_users_df.dtypes)
 
@@ -308,3 +346,6 @@ if __name__ == "__main__":
 
     print("\nTEST: DATA TYPES (EVENTS)")
     print(test_events_df.dtypes)
+
+    print("\nTEST: DATA TYPES (ORDERS)")
+    print(test_orders_df.dtypes)
