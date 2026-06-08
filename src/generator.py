@@ -36,6 +36,19 @@ SIM_CONFIG = {
     # NOTE: think about the degredation of data more
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
+    # events config
+    "event_spacing_seconds": 15,
+    "base_transactions": {
+        # if user is viewing an item
+        "view_item": {"view_item": 0.40, "add_to_cart": 0.30, "drop_off": 0.30},
+        # if user added to cart
+        "add_to_cart": {"view_item": 0.20, "begin_checkout": 0.50, "drop_off": 0.30},
+        # if user begins checkout
+        "begin_checkout": {"purchase": 0.40, "drop_off": 0.60},
+        # end states (if user purchases or drop off, session is over
+        "purchase": {"drop_off": 1.0},
+        "drop_off": {"drop_off": 1.0},
+    },
     # add more specs here, according to the document
 }
 
@@ -107,7 +120,7 @@ def generate_sessions(df_users: pd.DataFrame):
         session_id.append(new_id)
 
     # parent foreign keys
-    user_id = exploded_users["user_id"].tolist()
+    user_id_fk = exploded_users["user_id"].tolist()
 
     # session start timestamps (bimodal diurnal peak hours) | NOTE: random days is only limited to 30
     parent_created_at = exploded_users["account_created_at"].tolist()
@@ -192,7 +205,7 @@ def generate_sessions(df_users: pd.DataFrame):
     df_sessions = pd.DataFrame(
         {
             "session_id": session_id,
-            "user_id": user_id,
+            "user_id": user_id_fk,
             "session_start_time": session_start_time,
             "session_duration_seconds": session_duration_seconds,
             "device_os_version": device_os_version,
@@ -203,10 +216,80 @@ def generate_sessions(df_users: pd.DataFrame):
     return df_sessions
 
 
+def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
+    print(f"Generating events for {len(df_sessions)} sessions")
+
+    # pull latent_income_score from parent table for cart additions
+    working_df = df_sessions.merge(
+        df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
+    )
+
+    # event field names
+    event_id = []
+    session_id_fk = []
+    event_timestamp = []
+    event_type = []
+    error_message = []
+
+    # markov chain
+    for row in working_df.itertuples():
+        current_state = "view_item"
+        current_time = row.session_start_time
+        time_limit = row.session_start_time + timedelta(
+            seconds=row.session_duration_seconds
+        )
+
+        # NOTE: device check for intentional data degredation
+        is_android = "Android" in row.device_os_version
+
+        while current_state != "drop_off" and current_time < time_limit:
+            error = None
+
+            # NOTE: INTENTIONAL DATA DEGREDATION: ANDROID TELEMETRY BUG
+            if current_state == "begin_checkout" and is_android:
+                if rng.random() < SIM_CONFIG["android_error_rate"]:
+                    error = SIM_CONFIG["android_error_string"]
+                    current_state = "drop_off"
+
+            # append row data to columns
+            event_id.append(str(uuid.uuid4()))
+            session_id_fk.append(row.session_id)
+            event_timestamp.append(current_time)
+            event_type.append(current_state)
+            error_message.append(error)
+
+            # loop exit
+            if current_state == "drop_off":
+                break
+
+            # calculate next state using the transition matrix
+            transitions = SIM_CONFIG["base_transactions"][current_state]
+            possible_next_states = list(transitions.keys())
+            probabilities = list(transitions.values())
+
+            current_state = rng.choice(possible_next_states, p=probabilities)
+            current_time += timedelta(seconds=SIM_CONFIG["event_spacing_seconds"])
+
+    # turn into dataframe (pandas)
+    df_events = pd.DataFrame(
+        {
+            "event_id": event_id,
+            "session_id": session_id_fk,
+            "event_timestamp": event_timestamp,
+            "event_type": event_type,
+            "android_error": error_message,
+        }
+    )
+
+    print("event table generated")
+    return df_events
+
+
 # TEST: FOR TESTING ONLY
 if __name__ == "__main__":
     test_users_df = generate_users(20)
     test_sessions_df = generate_sessions(test_users_df)
+    test_events_df = generate_events(test_sessions_df, test_users_df)
 
     print("\nTEST: GENERATED USERS")
     print(test_users_df)
@@ -214,5 +297,14 @@ if __name__ == "__main__":
     print("\nTEST: GENERATED SESSIONS")
     print(test_sessions_df)
 
-    print("\nTEST: DATA TYPES")
+    print("\nTEST: GENERATED EVENTS")
+    print(test_events_df)
+
+    print("\nTEST: DATA TYPES (USERS)")
     print(test_users_df.dtypes)
+
+    print("\nTEST: DATA TYPES (SESSIONS)")
+    print(test_sessions_df.dtypes)
+
+    print("\nTEST: DATA TYPES (EVENTS)")
+    print(test_events_df.dtypes)
