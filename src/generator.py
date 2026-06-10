@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import uuid
 from datetime import datetime, timedelta
-import os
 
 # set seed to 42 for determinism (numpy)
 rng = np.random.default_rng(42)
@@ -50,11 +49,22 @@ SIM_CONFIG = {
         "purchase": {"drop_off": 1.0},
         "drop_off": {"drop_off": 1.0},
     },
-    # revenue config"
+    # order items config"
     "items_per_order_counts": [1, 2, 3, 4, 5],
     "items_per_order_weights": [0.50, 0.30, 0.10, 0.05, 0.05],
-    "base_item_price": 45.00,
-    # add more specs here, according to the document
+    "item_quantity_counts": [1, 2, 3, 5],
+    "item_quantity_weights": [0.85, 0.10, 0.04, 0.01],
+    "product_categories": ["Apparel", "Electronics", "Home Goods", "Consumables"],
+    "product_category_weights": [0.50, 0.20, 0.15, 0.15],
+    "category_base_prices": {
+        "Apparel": 35.00,
+        "Electronics": 250.00,
+        "Home Goods": 85.00,
+        "Consumables": 15.00,
+    },
+    "promo_code_probability": 0.25,
+    "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
+    "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
 }
 
 
@@ -102,7 +112,6 @@ def generate_users(total_users: int):
 
 
 def generate_sessions(df_users: pd.DataFrame):
-    # calculates total sessions | NOTE: 1 to 5 sessions per user, might change
     num_users = len(df_users)
     sessions_per_user = rng.choice(
         SIM_CONFIG["session_count"],
@@ -291,10 +300,9 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
 
 
 def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
-    print("Generating orders for purchases events")
-
     # only get purchase
     purchase = df_events[df_events["event_type"] == "purchase"].copy()
+    print(f"Generating {len(purchase)} orders for purchases events")
 
     purchase = purchase.merge(
         df_sessions[["session_id", "user_id"]], on="session_id", how="left"
@@ -327,7 +335,7 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
 
 
 def generate_order_items(df_orders: pd.DataFrame, df_users: pd.DataFrame):
-    print(f"Generating order items for {len(df_orders)}")
+    print(f"Generating order items for {len(df_orders)} orders")
 
     working_df = df_orders.merge(
         df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
@@ -348,28 +356,56 @@ def generate_order_items(df_orders: pd.DataFrame, df_users: pd.DataFrame):
     ].reset_index(drop=True)
 
     # generate columns (vectors-style)
-    item_id_list = [str(uuid.uuid4()) for _ in range(total_items)]
+    item_id_list = []
+    for _ in range(total_items):
+        new_id = str(uuid.uuid4())
+        item_id_list.append(new_id)
+
     item_order_fk = exploded_orders["order_id"].tolist()
-    item_quantity = rng.integers(1, 4, size=total_items)
+
+    item_quantity = rng.choice(
+        SIM_CONFIG["item_quantity_counts"],
+        size=total_items,
+        p=SIM_CONFIG["item_quantity_weights"],
+    )
 
     # pricing logic
+    item_category = rng.choice(
+        SIM_CONFIG["product_categories"],
+        size=total_items,
+        p=SIM_CONFIG["product_category_weights"],
+    )
+    base_prices = (
+        pd.Series(item_category).map(SIM_CONFIG["category_base_prices"]).to_numpy()
+    )
+    is_discounted = rng.random(size=total_items) < SIM_CONFIG["promo_code_probability"]
+    discount_tiers = rng.choice(
+        SIM_CONFIG["promo_discount_tiers"],
+        size=total_items,
+        p=SIM_CONFIG["promo_discount_weights"],
+    )
+    actual_discount = np.where(is_discounted, discount_tiers, 0.0)
+
     income_scores = exploded_orders["latent_income_score"].to_numpy()
     noise = rng.normal(0, 10, size=total_items)
-    raw_prices = SIM_CONFIG["base_item_price"] + (income_scores * 20) + noise
+    raw_prices = base_prices + (income_scores * 20) + noise
     item_price = np.maximum(9.99, raw_prices).round(2)
+    discounted_prices = raw_prices * (1.0 - actual_discount)
+    item_price = np.maximum(4.99, discounted_prices).round(2)
 
     # turn into dataframe (pandas)
     df_order_items = pd.DataFrame(
         {
             "order_item_id": item_id_list,
             "order_id": item_order_fk,
+            "product_category": item_category,
             "item_price": item_price,
             "quantity": item_quantity,
+            "discount_percentage": actual_discount,
         }
     )
 
     print("order items table generated!")
-
     return df_order_items
 
 
@@ -381,7 +417,7 @@ if __name__ == "__main__":
     test_orders_df = generate_orders(test_events_df, test_sessions_df)
     test_order_items_df = generate_order_items(test_orders_df, test_users_df)
 
-    # ETL to calculate order total
+    # ETL to calculate order total (initialized from generate_orders)
     test_order_items_df["line_total"] = (
         test_order_items_df["item_price"] * test_order_items_df["quantity"]
     )
@@ -428,7 +464,11 @@ if __name__ == "__main__":
 
     print("\nEXPORTING TO CSV")
 
-    test_users_df.to_csv("data/users.csv", index=False)
+    clean_users_df = test_users_df.drop(
+        columns=["latent_income_score", "latent_tech_savviness"]
+    )
+
+    clean_users_df.to_csv("data/users.csv", index=False)
     test_sessions_df.to_csv("data/sessions.csv", index=False)
     test_events_df.to_csv("data/events.csv", index=False)
     test_orders_df.to_csv("data/orders.csv", index=False)
