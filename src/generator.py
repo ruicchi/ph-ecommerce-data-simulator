@@ -49,6 +49,10 @@ SIM_CONFIG = {
         "purchase": {"drop_off": 1.0},
         "drop_off": {"drop_off": 1.0},
     },
+    # revenue config"
+    "items_per_order_counts": [1, 2, 3, 4, 5],
+    "items_per_order_weights": [0.50, 0.30, 0.10, 0.05, 0.05],
+    "base_item_price": 45.00,
     # add more specs here, according to the document
 }
 
@@ -286,6 +290,8 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
 
 
 def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
+    print("Generating orders for purchases events")
+
     # only get purchase
     purchase = df_events[df_events["event_type"] == "purchase"].copy()
 
@@ -306,7 +312,7 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
 
     order_total_amount = 0.0
 
-    # Generate basic order info, but LEAVE TOTAL BLANK for now
+    # turn into dataframe (pandas)
     df_orders = pd.DataFrame(
         {
             "order_id": order_id,
@@ -319,12 +325,75 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
     return df_orders
 
 
+def generate_order_items(df_orders: pd.DataFrame, df_users: pd.DataFrame):
+    print(f"Generating order items for {len(df_orders)}")
+
+    working_df = df_orders.merge(
+        df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
+    )
+
+    num_orders = len(working_df)
+
+    # NOTE: vectorized math
+    items_per_order = rng.choice(
+        SIM_CONFIG["items_per_order_counts"],
+        size=num_orders,
+        p=SIM_CONFIG["items_per_order_weights"],
+    )
+    total_items = items_per_order.sum()
+
+    exploded_orders = working_df.loc[
+        working_df.index.repeat(items_per_order)
+    ].reset_index(drop=True)
+
+    # generate columns (vectors-style)
+    item_id_list = [str(uuid.uuid4()) for _ in range(total_items)]
+    item_order_fk = exploded_orders["order_id"].tolist()
+    item_quantity = rng.integers(1, 4, size=total_items)
+
+    # pricing logic
+    income_scores = exploded_orders["latent_income_score"].to_numpy()
+    noise = rng.normal(0, 10, size=total_items)
+    raw_prices = SIM_CONFIG["base_item_price"] + (income_scores * 20) + noise
+    item_price = np.maximum(9.99, raw_prices).round(2)
+
+    # turn into dataframe (pandas)
+    df_order_items = pd.DataFrame(
+        {
+            "order_item_id": item_id_list,
+            "order_id": item_order_fk,
+            "item_price": item_price,
+            "quantity": item_quantity,
+        }
+    )
+
+    print("order items table generated!")
+
+    return df_order_items
+
+
 # TEST: FOR TESTING ONLY
 if __name__ == "__main__":
-    test_users_df = generate_users(20)
+    test_users_df = generate_users(SIM_CONFIG["target_users"])
     test_sessions_df = generate_sessions(test_users_df)
     test_events_df = generate_events(test_sessions_df, test_users_df)
     test_orders_df = generate_orders(test_events_df, test_sessions_df)
+    test_order_items_df = generate_order_items(test_orders_df, test_users_df)
+
+    # ETL to calculate order total
+    test_order_items_df["line_total"] = (
+        test_order_items_df["item_price"] * test_order_items_df["quantity"]
+    )
+    order_totals = (
+        test_order_items_df.groupby("order_id")["line_total"].sum().reset_index()
+    )
+
+    test_orders_df = (
+        test_orders_df.drop(columns=["order_total_amount"])
+        .merge(order_totals, on="order_id", how="left")
+        .rename(columns={"line_total": "order_total_amount"})
+    )
+    test_order_items_df = test_order_items_df.drop(columns=["line_total"])
 
     print("\nTEST: GENERATED USERS")
     print(test_users_df)
@@ -338,6 +407,9 @@ if __name__ == "__main__":
     print("\nTEST: GENERATED ORDERS")
     print(test_orders_df)
 
+    print("\nTEST: GENERATED ORDER ITEMS")
+    print(test_order_items_df)
+
     print("\nTEST: DATA TYPES (USERS)")
     print(test_users_df.dtypes)
 
@@ -349,3 +421,6 @@ if __name__ == "__main__":
 
     print("\nTEST: DATA TYPES (ORDERS)")
     print(test_orders_df.dtypes)
+
+    print("\nTEST: DATA TYPES (ORDER ITEMS)")
+    print(test_order_items_df.dtypes)
