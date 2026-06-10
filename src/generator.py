@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import uuid
 from datetime import datetime, timedelta
+import os
 
 # set seed to 42 for determinism (numpy)
 rng = np.random.default_rng(42)
@@ -424,3 +425,13 @@ if __name__ == "__main__":
 
     print("\nTEST: DATA TYPES (ORDER ITEMS)")
     print(test_order_items_df.dtypes)
+
+    print("\nEXPORTING TO CSV")
+
+    test_users_df.to_csv("data/users.csv", index=False)
+    test_sessions_df.to_csv("data/sessions.csv", index=False)
+    test_events_df.to_csv("data/events.csv", index=False)
+    test_orders_df.to_csv("data/orders.csv", index=False)
+    test_order_items_df.to_csv("data/order_items.csv", index=False)
+
+    print("export completed in data folder")
