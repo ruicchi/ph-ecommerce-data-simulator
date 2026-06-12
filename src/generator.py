@@ -38,7 +38,7 @@ SIM_CONFIG = {
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
     # events config
-    "event_spacing_seconds": 15,
+    "event_spacing_scale_seconds": 30,
     "base_transactions": {
         # if user is viewing an item
         "view_item": {"view_item": 0.40, "add_to_cart": 0.30, "drop_off": 0.30},
@@ -50,7 +50,6 @@ SIM_CONFIG = {
         "purchase": {"drop_off": 1.0},
         "drop_off": {"drop_off": 1.0},
     },
-    # order items config"
     "items_per_order_counts": [1, 2, 3, 4, 5],
     "items_per_order_weights": [0.50, 0.30, 0.10, 0.05, 0.05],
     "item_quantity_counts": [1, 2, 3, 5],
@@ -78,11 +77,6 @@ def generate_users(total_users: int):
         new_id = str(uuid.uuid4())
         user_ids.append(new_id)
 
-    # assigns acquisition channel
-    acq_channel = rng.choice(
-        SIM_CONFIG["channels"], size=total_users, p=SIM_CONFIG["channel_weights"]
-    )
-
     # account created timestamps
     base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
     days_ago_array = rng.integers(0, 365, size=total_users)
@@ -102,7 +96,6 @@ def generate_users(total_users: int):
         {
             "user_id": user_ids,
             "account_created_at": created_at,
-            "acquisition_channel": acq_channel,
             "latent_income_score": latent_income_score,
             "latent_tech_savviness": latent_tech_savviness,
         }
@@ -159,6 +152,11 @@ def generate_sessions(df_users: pd.DataFrame):
     chosen_peaks = rng.choice(SIM_CONFIG["peak_hours"], size=total_sessions)
     normal_dist_hours = rng.normal(loc=chosen_peaks, scale=1.0)
     random_seconds_array = ((normal_dist_hours % 24) * 3600).astype(int)
+
+    # assigns acquisition channel
+    acq_channel = rng.choice(
+        SIM_CONFIG["channels"], size=len(session_id), p=SIM_CONFIG["channel_weights"]
+    )
 
     session_start_time = []
     for created_date, days, seconds in zip(
@@ -221,6 +219,7 @@ def generate_sessions(df_users: pd.DataFrame):
         {
             "session_id": session_id,
             "user_id": user_id_fk,
+            "acquisition_channel": acq_channel,
             "session_start_time": session_start_time,
             "session_duration_seconds": session_duration_seconds,
             "device_os_version": device_os_version,
@@ -238,6 +237,8 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
     working_df = df_sessions.merge(
         df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
     )
+    categories = SIM_CONFIG["product_categories"]
+    categories_weights = SIM_CONFIG["product_category_weights"]
 
     # event field names
     event_id = []
@@ -245,6 +246,7 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
     event_timestamp = []
     event_type = []
     error_message = []
+    viewed_category = []
 
     # markov chain
     for row in working_df.itertuples():
@@ -257,8 +259,16 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
         # NOTE: device check for intentional data degredation
         is_android = "Android" in row.device_os_version
 
+        current_category = None
+
         while current_state != "drop_off" and current_time < time_limit:
             error = None
+
+            # assigns category based on user state
+            if current_state == "view_item":
+                current_category = rng.choice(categories, p=categories_weights)
+            elif current_state == "begin_checkout":
+                current_category = None
 
             # NOTE: INTENTIONAL DATA DEGREDATION: ANDROID TELEMETRY BUG
             if current_state == "begin_checkout" and is_android:
@@ -272,6 +282,7 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
             event_timestamp.append(current_time)
             event_type.append(current_state)
             error_message.append(error)
+            viewed_category.append(current_category)
 
             # loop exit
             if current_state == "drop_off":
@@ -283,7 +294,11 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
             probabilities = list(transitions.values())
 
             current_state = rng.choice(possible_next_states, p=probabilities)
-            current_time += timedelta(seconds=SIM_CONFIG["event_spacing_seconds"])
+
+            # create right-skewed distribution on wait time
+            avg_wait = SIM_CONFIG["event_spacing_scale_seconds"]
+            random_wait = int(rng.exponential(scale=avg_wait))
+            current_time += timedelta(seconds=random_wait)
 
     # turn into dataframe (pandas)
     df_events = pd.DataFrame(
@@ -292,6 +307,7 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
             "session_id": session_id_fk,
             "event_timestamp": event_timestamp,
             "event_type": event_type,
+            "viewed_category": viewed_category,
             "android_error": error_message,
         }
     )
@@ -423,6 +439,7 @@ if __name__ == "__main__":
     # ETL to calculate order total (initialized from generate_orders)
     test_order_items_df["line_total"] = (
         test_order_items_df["item_price"] * test_order_items_df["quantity"]
+    )
 
     order_totals = (
         test_order_items_df.groupby("order_id")["line_total"].sum().reset_index()
