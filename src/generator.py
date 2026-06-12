@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import uuid
+import os
 from datetime import datetime, timedelta
 
 # set seed to 42 for determinism (numpy)
@@ -411,7 +412,9 @@ def generate_order_items(df_orders: pd.DataFrame, df_users: pd.DataFrame):
 
 # TEST: FOR TESTING ONLY
 if __name__ == "__main__":
-    test_users_df = generate_users(SIM_CONFIG["target_users"])
+    # test_users_df = generate_users(SIM_CONFIG["target_users"])
+
+    test_users_df = generate_users(20)
     test_sessions_df = generate_sessions(test_users_df)
     test_events_df = generate_events(test_sessions_df, test_users_df)
     test_orders_df = generate_orders(test_events_df, test_sessions_df)
@@ -420,7 +423,7 @@ if __name__ == "__main__":
     # ETL to calculate order total (initialized from generate_orders)
     test_order_items_df["line_total"] = (
         test_order_items_df["item_price"] * test_order_items_df["quantity"]
-    )
+
     order_totals = (
         test_order_items_df.groupby("order_id")["line_total"].sum().reset_index()
     )
@@ -463,6 +466,8 @@ if __name__ == "__main__":
     print(test_order_items_df.dtypes)
 
     print("\nEXPORTING TO CSV")
+
+    os.makedirs("data", exist_ok=True)
 
     clean_users_df = test_users_df.drop(
         columns=["latent_income_score", "latent_tech_savviness"]
