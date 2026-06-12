@@ -258,7 +258,6 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
 
         # NOTE: device check for intentional data degredation
         is_android = "Android" in row.device_os_version
-
         current_category = None
 
         while current_state != "drop_off" and current_time < time_limit:
@@ -274,7 +273,6 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
             if current_state == "begin_checkout" and is_android:
                 if rng.random() < SIM_CONFIG["android_error_rate"]:
                     error = SIM_CONFIG["android_error_string"]
-                    current_state = "drop_off"
 
             # append row data to columns
             event_id.append(str(uuid.uuid4()))
@@ -283,6 +281,10 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
             event_type.append(current_state)
             error_message.append(error)
             viewed_category.append(current_category)
+
+            if error:
+                current_state = "drop_off"
+                continue
 
             # loop exit
             if current_state == "drop_off":
@@ -299,6 +301,15 @@ def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
             avg_wait = SIM_CONFIG["event_spacing_scale_seconds"]
             random_wait = int(rng.exponential(scale=avg_wait))
             current_time += timedelta(seconds=random_wait)
+
+        # session timeout cleanup when (current_time > time_limit)
+        if current_state not in ["drop_off", "purchase"]:
+            event_id.append(str(uuid.uuid4()))
+            session_id_fk.append(row.session_id)
+            event_timestamp.append(time_limit)
+            event_type.append("drop_off")
+            error_message.append("ERR_SESSION_TIMEOUT")
+            viewed_category.append(current_category)
 
     # turn into dataframe (pandas)
     df_events = pd.DataFrame(
@@ -406,9 +417,9 @@ def generate_order_items(df_orders: pd.DataFrame, df_users: pd.DataFrame):
     income_scores = exploded_orders["latent_income_score"].to_numpy()
     noise = rng.normal(0, 10, size=total_items)
     raw_prices = base_prices + (income_scores * 20) + noise
-    item_price = np.maximum(9.99, raw_prices).round(2)
-    discounted_prices = raw_prices * (1.0 - actual_discount)
-    item_price = np.maximum(4.99, discounted_prices).round(2)
+    base_item_price = np.maximum(9.99, raw_prices).round(2)
+    discounted_prices = base_item_price * (1.0 - actual_discount)
+    final_item_price = np.maximum(4.99, discounted_prices).round(2)
 
     # turn into dataframe (pandas)
     df_order_items = pd.DataFrame(
@@ -416,7 +427,7 @@ def generate_order_items(df_orders: pd.DataFrame, df_users: pd.DataFrame):
             "order_item_id": item_id_list,
             "order_id": item_order_fk,
             "product_category": item_category,
-            "item_price": item_price,
+            "item_price": final_item_price,
             "quantity": item_quantity,
             "discount_percentage": actual_discount,
         }
@@ -490,10 +501,17 @@ if __name__ == "__main__":
         columns=["latent_income_score", "latent_tech_savviness"]
     )
 
+    sorted_test_events_df = test_events_df.sort_values(
+        by="event_timestamp"
+    ).reset_index(drop=True)
+    sorted_test_orders_df = test_orders_df.sort_values(
+        by="order_timestamp"
+    ).reset_index(drop=True)
+
     clean_users_df.to_csv("data/users.csv", index=False)
     test_sessions_df.to_csv("data/sessions.csv", index=False)
-    test_events_df.to_csv("data/events.csv", index=False)
-    test_orders_df.to_csv("data/orders.csv", index=False)
+    sorted_test_events_df.to_csv("data/events.csv", index=False)
+    sorted_test_orders_df.to_csv("data/orders.csv", index=False)
     test_order_items_df.to_csv("data/order_items.csv", index=False)
 
     print("export completed in data folder")
