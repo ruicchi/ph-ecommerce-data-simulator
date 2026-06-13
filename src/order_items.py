@@ -65,6 +65,12 @@ def generate_order_items(
     discounted_prices = base_item_price * (1.0 - actual_discount)
     final_item_price = np.maximum(4.99, discounted_prices).round(2)
 
+    # NOTE: generated outliers in item price (x100 item price)
+    outlier_mask = rng.random(size=total_items) < SIM_CONFIG["outlier_rate_item_price"]
+    final_item_price[outlier_mask] = (
+        final_item_price[outlier_mask] * SIM_CONFIG["outlier_price_multiplier"]
+    ).round(2)
+
     # turn into dataframe (pandas)
     df_order_items = pd.DataFrame(
         {

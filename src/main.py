@@ -19,21 +19,6 @@ if __name__ == "__main__":
     test_orders_df = generate_orders(test_events_df, test_sessions_df)
     test_order_items_df = generate_order_items(test_orders_df, test_users_df, rng)
 
-    # ETL to calculate order total (initialized from generate_orders)
-    test_order_items_df["line_total"] = (
-        test_order_items_df["item_price"] * test_order_items_df["quantity"]
-    )
-
-    order_totals = (
-        test_order_items_df.groupby("order_id")["line_total"].sum().reset_index()
-    )
-
-    test_orders_df = test_orders_df.merge(
-        order_totals, on="order_id", how="left"
-    ).rename(columns={"line_total": "order_total_amount"})
-
-    test_order_items_df = test_order_items_df.drop(columns=["line_total"])
-
     print("\nTEST: GENERATED USERS")
     print(test_users_df)
 

@@ -30,6 +30,12 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     # parent foreign keys
     user_id_fk = exploded_users["user_id"].tolist()
 
+    user_counter = {}
+    session_number = []
+    for uid in user_id_fk:
+        user_counter[uid] = user_counter.get(uid, 0) + 1
+        session_number.append(user_counter[uid])
+
     # session start timestamps (bimodal diurnal peak hours) | NOTE: random days is only limited to 30
     parent_created_at = exploded_users["account_created_at"].tolist()
     base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
@@ -65,6 +71,15 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         start_date = created_date + timedelta(days=int(days), seconds=int(seconds))
         session_start_time.append(start_date)
 
+    session_date = []
+    is_weekend = []
+    for start_time in session_start_time:
+        date_only = start_time.date()
+        session_date.append(date_only)
+        weekday_num = start_time.weekday()
+        is_weekend_value = weekday_num >= 5
+        is_weekend.append(is_weekend_value)
+
     # session duration | NOTE: exponential decay is based on tech savviness
     latent_savviness = exploded_users["latent_tech_savviness"].to_numpy()
     base_duration = rng.exponential(
@@ -73,13 +88,19 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     savviness_reduction = latent_savviness * SIM_CONFIG["savviness_time_reduction"]
 
     # no session is shorter than 10 seconds
-    session_duration_seconds = (
-        np.maximum(
-            SIM_CONFIG["session_base_min_seconds"], base_duration - savviness_reduction
-        )
-        .astype(int)
-        .tolist()
+    session_duration_seconds = np.maximum(
+        SIM_CONFIG["session_base_min_seconds"], base_duration - savviness_reduction
+    ).astype(int)
+
+    # NOTE: generated outliers for duration seconds
+    outlier_mask = (
+        rng.random(size=total_sessions) < SIM_CONFIG["outlier_rate_session_duration"]
     )
+    session_duration_seconds[outlier_mask] = (
+        session_duration_seconds[outlier_mask]
+        * SIM_CONFIG["outlier_duration_multiplier"]
+    ).astype(int)
+    session_duration_seconds = session_duration_seconds.tolist()
 
     # device OS versions
     base_os_array = rng.choice(
@@ -89,40 +110,51 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     )
 
     device_os_version = []
+    device_group = []
     for os_type in base_os_array:
         if os_type == "Android":
             version = rng.choice(
                 SIM_CONFIG["android_software_version"],
                 p=SIM_CONFIG["android_software_version_weights"],
             )
+            device_os_version.append(f"{os_type} {version}")
+            device_group.append("Mobile")
 
         elif os_type == "iOS":
             version = rng.choice(
                 SIM_CONFIG["ios_software_version"],
                 p=SIM_CONFIG["ios_software_version_weights"],
             )
+            device_os_version.append(f"{os_type} {version}")
+            device_group.append("Mobile")
         elif os_type == "Windows":
             version = rng.choice(
                 SIM_CONFIG["windows_software_version"],
                 p=SIM_CONFIG["windows_software_version_weights"],
             )
+            device_os_version.append(f"{os_type} {version}")
+            device_group.append("Desktop")
 
         else:
             version = rng.choice(
                 SIM_CONFIG["macos_software_version"],
             )
-
-        device_os_version.append(f"{os_type} {version}")
+            device_os_version.append(f"{os_type} {version}")
+            device_group.append("Desktop")
 
     # turn into dataframe (pandas)
     df_sessions = pd.DataFrame(
         {
             "session_id": session_id,
             "user_id": user_id_fk,
+            "session_number": session_number,
             "acquisition_channel": acq_channel,
             "session_start_time": session_start_time,
+            "session_date": session_date,
+            "is_weekend": is_weekend,
             "session_duration_seconds": session_duration_seconds,
             "device_os_version": device_os_version,
+            "device_group": device_group,
         }
     )
 
