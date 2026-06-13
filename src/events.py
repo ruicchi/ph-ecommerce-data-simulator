@@ -1,0 +1,105 @@
+import uuid
+import pandas as pd
+from datetime import timedelta
+from numpy.random import default_rng
+
+from config import SIM_CONFIG
+
+rng = default_rng(SIM_CONFIG["random_seed"])
+
+
+def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
+    print(f"Generating events for {len(df_sessions)} sessions")
+
+    # pull latent_income_score from parent table for cart additions
+    working_df = df_sessions.merge(
+        df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
+    )
+    categories = SIM_CONFIG["product_categories"]
+    categories_weights = SIM_CONFIG["product_category_weights"]
+
+    # event field names
+    event_id = []
+    session_id_fk = []
+    event_timestamp = []
+    event_type = []
+    error_message = []
+    viewed_category = []
+
+    # markov chain
+    for row in working_df.itertuples():
+        current_state = "view_item"
+        current_time = row.session_start_time
+        time_limit = row.session_start_time + timedelta(
+            seconds=row.session_duration_seconds
+        )
+
+        # NOTE: device check for intentional data degredation
+        is_android = "Android" in row.device_os_version
+        current_category = None
+
+        while current_state != "drop_off" and current_time < time_limit:
+            error = None
+
+            # assigns category based on user state
+            if current_state == "view_item":
+                current_category = rng.choice(categories, p=categories_weights)
+            elif current_state == "begin_checkout":
+                current_category = None
+
+            # NOTE: INTENTIONAL DATA DEGREDATION: ANDROID TELEMETRY BUG
+            if current_state == "begin_checkout" and is_android:
+                if rng.random() < SIM_CONFIG["android_error_rate"]:
+                    error = SIM_CONFIG["android_error_string"]
+
+            # append row data to columns
+            event_id.append(str(uuid.uuid4()))
+            session_id_fk.append(row.session_id)
+            event_timestamp.append(current_time)
+            event_type.append(current_state)
+            error_message.append(error)
+            viewed_category.append(current_category)
+
+            if error:
+                current_state = "drop_off"
+                continue
+
+            # loop exit
+            if current_state == "drop_off":
+                break
+
+            # calculate next state using the transition matrix
+            transitions = SIM_CONFIG["base_transactions"][current_state]
+            possible_next_states = list(transitions.keys())
+            probabilities = list(transitions.values())
+
+            current_state = rng.choice(possible_next_states, p=probabilities)
+
+            # create right-skewed distribution on wait time
+            avg_wait = SIM_CONFIG["event_spacing_scale_seconds"]
+            random_wait = int(rng.exponential(scale=avg_wait))
+            current_time += timedelta(seconds=random_wait)
+
+        # session timeout cleanup when (current_time > time_limit)
+        if current_state not in ["drop_off", "purchase"]:
+            event_id.append(str(uuid.uuid4()))
+            session_id_fk.append(row.session_id)
+            event_timestamp.append(time_limit)
+            event_type.append("drop_off")
+            error_message.append("ERR_SESSION_TIMEOUT")
+            viewed_category.append(current_category)
+
+    # turn into dataframe (pandas)
+    df_events = pd.DataFrame(
+        {
+            "event_id": event_id,
+            "session_id": session_id_fk,
+            "event_timestamp": event_timestamp,
+            "event_type": event_type,
+            "viewed_category": viewed_category,
+            "android_error": error_message,
+        }
+    )
+
+    print("events table generated!")
+    return df_events
