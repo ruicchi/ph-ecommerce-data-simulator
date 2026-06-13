@@ -1,14 +1,11 @@
 import uuid
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
-from numpy.random import default_rng
-
 from config import SIM_CONFIG
 
-rng = default_rng(SIM_CONFIG["random_seed"])
 
-
-def generate_users(total_users: int):
+def generate_users(total_users: int, rng: np.random.Generator):
     print(f"Generating {total_users} users")
 
     # user primary keys

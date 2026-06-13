@@ -1,14 +1,13 @@
 import uuid
 import pandas as pd
+import numpy as np
 from datetime import timedelta
-from numpy.random import default_rng
-
 from config import SIM_CONFIG
 
-rng = default_rng(SIM_CONFIG["random_seed"])
 
-
-def generate_events(df_sessions: pd.DataFrame, df_users: pd.DataFrame):
+def generate_events(
+    df_sessions: pd.DataFrame, df_users: pd.DataFrame, rng: np.random.Generator
+):
     print(f"Generating events for {len(df_sessions)} sessions")
 
     # pull latent_income_score from parent table for cart additions

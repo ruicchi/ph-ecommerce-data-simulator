@@ -1,5 +1,7 @@
 import os
+import numpy as np
 
+from config import SIM_CONFIG
 from users import generate_users
 from sessions import generate_sessions
 from events import generate_events
@@ -8,13 +10,14 @@ from order_items import generate_order_items
 
 # TEST: FOR TESTING ONLY
 if __name__ == "__main__":
+    rng = np.random.default_rng(SIM_CONFIG["random_seed"])
     # test_users_df = generate_users(SIM_CONFIG["target_users"])
 
-    test_users_df = generate_users(20)
-    test_sessions_df = generate_sessions(test_users_df)
-    test_events_df = generate_events(test_sessions_df, test_users_df)
+    test_users_df = generate_users(20, rng)
+    test_sessions_df = generate_sessions(test_users_df, rng)
+    test_events_df = generate_events(test_sessions_df, test_users_df, rng)
     test_orders_df = generate_orders(test_events_df, test_sessions_df)
-    test_order_items_df = generate_order_items(test_orders_df, test_users_df)
+    test_order_items_df = generate_order_items(test_orders_df, test_users_df, rng)
 
     # ETL to calculate order total (initialized from generate_orders)
     test_order_items_df["line_total"] = (

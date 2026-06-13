@@ -2,14 +2,10 @@ import uuid
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from numpy.random import default_rng
-
 from config import SIM_CONFIG
 
-rng = default_rng(SIM_CONFIG["random_seed"])
 
-
-def generate_sessions(df_users: pd.DataFrame):
+def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     num_users = len(df_users)
     sessions_per_user = rng.choice(
         SIM_CONFIG["session_count"],

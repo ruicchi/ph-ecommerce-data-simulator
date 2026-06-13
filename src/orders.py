@@ -1,10 +1,5 @@
 import uuid
 import pandas as pd
-from numpy.random import default_rng
-
-from config import SIM_CONFIG
-
-rng = default_rng(SIM_CONFIG["random_seed"])
 
 
 def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
