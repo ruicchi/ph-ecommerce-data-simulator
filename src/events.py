@@ -59,6 +59,15 @@ def generate_events(
             error_message.append(error)
             viewed_category.append(current_category)
 
+            # 0.5% chance of triggering
+            if rng.random() < SIM_CONFIG["dup_rate_events"]:
+                event_id.append(str(uuid.uuid4()))
+                session_id_fk.append(row.session_id)
+                event_timestamp.append(current_time)  # same timestamp
+                event_type.append(current_state)
+                error_message.append(error)
+                viewed_category.append(current_category)
+
             if error:
                 current_state = "drop_off"
                 continue

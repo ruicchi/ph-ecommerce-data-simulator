@@ -57,4 +57,53 @@ SIM_CONFIG = {
     "promo_code_probability": 0.25,
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
     "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
+    # data degredation
+    # null rates (fraction of rows)
+    "null_rate_device_os": 0.03,
+    "null_rate_channel": 0.02,
+    "null_rate_viewed_category": 0.01,
+    "null_rate_discount": 0.10,
+    "null_rate_item_price": 0.01,
+    # duplicate rate
+    "dup_rate_events": 0.005,
+    # outlier rates
+    "outlier_rate_session_duration": 0.01,
+    "outlier_duration_multiplier": 10,
+    "outlier_rate_item_price": 0.005,
+    "outlier_price_multiplier": 100,
+    "regions": {
+        "NCR": {
+            "weight": 0.35,
+            "cities": ["Manila", "Quezon City", "Makati", "Taguig"],
+            "city_weights": [0.35, 0.30, 0.20, 0.15],
+        },
+        "Region IV-A": {
+            "weight": 0.18,
+            "cities": ["Laguna", "Cavite", "Batangas"],
+            "city_weights": [0.40, 0.35, 0.25],
+        },
+        "Region III": {
+            "weight": 0.10,
+            "cities": ["Bulacan", "Pampanga"],
+            "city_weights": [0.55, 0.45],
+        },
+        "Region VII": {"weight": 0.12, "cities": ["Cebu City"], "city_weights": [1.0]},
+        "Region XI": {"weight": 0.08, "cities": ["Davao City"], "city_weights": [1.0]},
+        "Region VI": {
+            "weight": 0.06,
+            "cities": ["Iloilo", "Bacolod"],
+            "city_weights": [0.55, 0.45],
+        },
+        "CAR": {"weight": 0.03, "cities": ["Baguio"], "city_weights": [1.0]},
+        "Region X": {
+            "weight": 0.05,
+            "cities": ["Cagayan de Oro"],
+            "city_weights": [1.0],
+        },
+        "Region IX": {
+            "weight": 0.03,
+            "cities": ["Zamboanga City"],
+            "city_weights": [1.0],
+        },
+    },
 }

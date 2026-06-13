@@ -22,8 +22,6 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
 
     order_timestamp = purchase["event_timestamp"].tolist()
 
-    order_total_amount = 0.0
-
     # turn into dataframe (pandas)
     df_orders = pd.DataFrame(
         {
@@ -31,7 +29,6 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
             "session_id": session_id_fk,
             "user_id": user_id_fk,
             "order_timestamp": order_timestamp,
-            "order_total_amount": order_total_amount,
         }
     )
     return df_orders

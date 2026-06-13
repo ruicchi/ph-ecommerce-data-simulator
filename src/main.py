@@ -28,11 +28,10 @@ if __name__ == "__main__":
         test_order_items_df.groupby("order_id")["line_total"].sum().reset_index()
     )
 
-    test_orders_df = (
-        test_orders_df.drop(columns=["order_total_amount"])
-        .merge(order_totals, on="order_id", how="left")
-        .rename(columns={"line_total": "order_total_amount"})
-    )
+    test_orders_df = test_orders_df.merge(
+        order_totals, on="order_id", how="left"
+    ).rename(columns={"line_total": "order_total_amount"})
+
     test_order_items_df = test_order_items_df.drop(columns=["line_total"])
 
     print("\nTEST: GENERATED USERS")

@@ -28,11 +28,30 @@ def generate_users(total_users: int, rng: np.random.Generator):
     latent_income_score = rng.normal(loc=0, scale=1.0, size=total_users)
     latent_tech_savviness = rng.uniform(low=0, high=1.0, size=total_users)
 
+    region_names = list(SIM_CONFIG["regions"].keys())
+
+    region_weights = []
+    for region_name in region_names:
+        weight = SIM_CONFIG["regions"][region_name]["weight"]
+        region_weights.append(weight)
+    region = rng.choice(region_names, size=total_users, p=region_weights)
+
+    user_tenure_days = days_ago_array
+
+    city = []
+    for chosen_region in region:
+        region_info = SIM_CONFIG["regions"][chosen_region]
+        chosen_city = rng.choice(region_info["cities"], p=region_info["city_weights"])
+        city.append(chosen_city)
+
     # turn into dataframe (pandas)
     df_users = pd.DataFrame(
         {
             "user_id": user_ids,
             "account_created_at": created_at,
+            "city": city,
+            "region": region,
+            "user_tenure_days": user_tenure_days,
             "latent_income_score": latent_income_score,
             "latent_tech_savviness": latent_tech_savviness,
         }
