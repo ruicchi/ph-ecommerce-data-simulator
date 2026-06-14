@@ -89,6 +89,28 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         is_weekend_value = weekday_num >= 5
         is_weekend.append(is_weekend_value)
 
+    # payday spike: 15th or 30th | NOTE: i'm not sure if this is a correct implementation for this
+    payday_dates = SIM_CONFIG["payday_dates"]
+    shift_probability = 0.12
+
+    for session_index, session_start in enumerate(session_start_time):
+        day_of_month = session_start.day
+        is_payday = day_of_month in payday_dates
+        if is_payday:
+            continue
+
+        should_shift = rng.random() < shift_probability
+        if not should_shift:
+            continue
+
+        distance_to_15 = abs(day_of_month - 15)
+        distance_to_30 = abs(day_of_month - 30)
+        if distance_to_15 <= distance_to_30:
+            nearest_payday = 15
+        else:
+            nearest_payday = 30
+        session_start_time[session_index] = session_start.replace(day=nearest_payday)
+
     # session duration | NOTE: exponential decay is based on digital_literacy
     latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
     base_duration = rng.exponential(

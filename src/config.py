@@ -19,9 +19,9 @@ SIM_CONFIG = {
     "os_distribution": ["Android", "iOS", "Windows", "macOS"],
     "os_weights": [0.40, 0.25, 0.20, 0.15],
     "os_by_income": {
-        "low": {"weights": [0.55, 0.20, 0.15, 0.10]},
-        "mid": {"weights": [0.38, 0.25, 0.20, 0.17]},
-        "high": {"weights": [0.25, 0.30, 0.25, 0.20]},
+        "low": [0.55, 0.20, 0.15, 0.10],
+        "mid": [0.38, 0.25, 0.20, 0.17],
+        "high": [0.25, 0.30, 0.25, 0.20],
     },
     "income_os_thresholds": [-0.44, 0.44],
     "android_software_version": [0.50, 0.30, 0.15, 0.05],
@@ -64,7 +64,7 @@ SIM_CONFIG = {
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
     "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
     "payment_methods": ["COD", "GCash", "Maya", "Credit Card", "Bank Transfer"],
-    "payment_method_weights": [0.35, 0.25, 0.25, 0.15, 0.10],
+    "payment_method_weights": [0.25, 0.25, 0.25, 0.15, 0.10],
     # data degredation
     # duplicate rate
     "dup_rate_events": 0.005,
@@ -79,6 +79,8 @@ SIM_CONFIG = {
         "high": [0.25, 0.35, 0.10, 0.30],
     },
     "literacy_thresholds": [0.33, 0.67],
+    "payday_dates": [15, 30],
+    "payday_boost": 1.3,
     "regions": {
         "NCR": {
             "weight": 0.35,
