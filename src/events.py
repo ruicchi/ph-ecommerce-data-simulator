@@ -12,7 +12,9 @@ def generate_events(
 
     # pull latent_income_score from parent table for cart additions
     working_df = df_sessions.merge(
-        df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
+        df_users[["user_id", "latent_digital_literacy", "latent_trust_in_platform"]],
+        on="user_id",
+        how="left",
     )
     categories = SIM_CONFIG["product_categories"]
     categories_weights = SIM_CONFIG["product_category_weights"]
@@ -80,6 +82,29 @@ def generate_events(
             transitions = SIM_CONFIG["base_transactions"][current_state]
             possible_next_states = list(transitions.keys())
             probabilities = list(transitions.values())
+
+            if current_state == "view_item":
+                literacy_effect = SIM_CONFIG["funnel_view_item_literacy_effect"]
+                literacy_adjustment = literacy_effect * (row.latent_digital_literacy)
+                probabilities[1] = probabilities[1] + literacy_adjustment
+                probabilities[2] = probabilities[2] - literacy_adjustment
+
+                if "Mobile" in row.device_group:
+                    mobile_penalty = SIM_CONFIG["funnel_view_item_mobile_penalty"]
+                    probabilities[1] = probabilities[1] + mobile_penalty
+                    probabilities[2] = probabilities[2] - mobile_penalty
+
+            elif current_state == "begin_checkout":
+                trust_effect = SIM_CONFIG["funnel_checkout_trust_effect"]
+                trust_mean = SIM_CONFIG["funnel_checkout_trust_mean"]
+                trust_adjustment = trust_effect * (
+                    row.latent_trust_in_platform - trust_mean
+                )
+                probabilities[0] = probabilities[0] + trust_adjustment
+                probabilities[1] = probabilities[1] - trust_adjustment
+
+            probabilities = np.clip(probabilities, 0.001, 0.999)
+            probabilities = probabilities / np.sum(probabilities)
 
             current_state = rng.choice(possible_next_states, p=probabilities)
 

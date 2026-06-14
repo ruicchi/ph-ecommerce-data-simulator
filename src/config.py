@@ -24,7 +24,7 @@ SIM_CONFIG = {
         "high": [0.25, 0.30, 0.25, 0.20],
     },
     "income_os_thresholds": [-0.44, 0.44],
-    "android_software_version": [0.50, 0.30, 0.15, 0.05],
+    "android_software_version": [14, 13, 12, 11],
     "android_software_version_weights": [0.5, 0.3, 0.15, 0.05],
     "ios_software_version": ["17.3", "16.5", "15.2"],
     "ios_software_version_weights": [0.6, 0.3, 0.1],
@@ -81,6 +81,10 @@ SIM_CONFIG = {
     "literacy_thresholds": [0.33, 0.67],
     "payday_dates": [15, 30],
     "payday_boost": 1.3,
+    "funnel_view_item_literacy_effect": 0.08,
+    "funnel_view_item_mobile_penalty": 0.05,
+    "funnel_checkout_trust_effect": 0.15,
+    "funnel_checkout_trust_mean": 0.286,
     "regions": {
         "NCR": {
             "weight": 0.35,
