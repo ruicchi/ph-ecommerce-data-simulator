@@ -23,7 +23,8 @@ def generate_users(total_users: int, rng: np.random.Generator):
 
     # engine for latent variables (numpy) | creates a gaussian distribution | NOTE: this might change, defeats the purpose of funnel optimization analyst
     latent_income_score = rng.normal(loc=0, scale=1.0, size=total_users)
-    latent_tech_savviness = rng.uniform(low=0, high=1.0, size=total_users)
+    latent_digital_literacy = rng.uniform(low=0, high=1.0, size=total_users)
+    latent_trust_in_platform = rng.beta(a=2, b=5, size=total_users)
 
     region_names = list(SIM_CONFIG["regions"].keys())
 
@@ -50,7 +51,8 @@ def generate_users(total_users: int, rng: np.random.Generator):
             "region": region,
             "user_tenure_days": user_tenure_days,
             "latent_income_score": latent_income_score,
-            "latent_tech_savviness": latent_tech_savviness,
+            "latent_digital_literacy": latent_digital_literacy,
+            "latent_trust_in_platform": latent_trust_in_platform,
         }
     )
 

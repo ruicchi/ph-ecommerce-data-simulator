@@ -56,10 +56,22 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     normal_dist_hours = rng.normal(loc=chosen_peaks, scale=1.0)
     random_seconds_array = ((normal_dist_hours % 24) * 3600).astype(int)
 
-    # assigns acquisition channel
-    acq_channel = rng.choice(
-        SIM_CONFIG["channels"], size=len(session_id), p=SIM_CONFIG["channel_weights"]
-    )
+    # assigns acquisition channel, NOTE: based on digital_literacy
+    literacy = exploded_users["latent_digital_literacy"].to_numpy()
+    thresholds = SIM_CONFIG["literacy_thresholds"]
+    literacy_tier = np.full(total_sessions, "mid", dtype=object)
+    literacy_tier[literacy < thresholds[0]] = "low"
+    literacy_tier[literacy >= thresholds[1]] = "high"
+
+    literacy_tier_names = list(SIM_CONFIG["channel_weights_by_literacy"].keys())
+    acq_channel = np.empty(total_sessions, dtype=object)
+    for tier in literacy_tier_names:
+        mask = literacy_tier == tier
+        acq_channel[mask] = rng.choice(
+            SIM_CONFIG["channels"],
+            size=mask.sum(),
+            p=SIM_CONFIG["channel_weights_by_literacy"][tier],
+        )
 
     session_start_time = []
     for created_date, days, seconds in zip(
@@ -77,16 +89,18 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         is_weekend_value = weekday_num >= 5
         is_weekend.append(is_weekend_value)
 
-    # session duration | NOTE: exponential decay is based on tech savviness
-    latent_savviness = exploded_users["latent_tech_savviness"].to_numpy()
+    # session duration | NOTE: exponential decay is based on digital_literacy
+    latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
     base_duration = rng.exponential(
         scale=SIM_CONFIG["session_base_max_seconds"], size=total_sessions
     )
-    savviness_reduction = latent_savviness * SIM_CONFIG["savviness_time_reduction"]
+    literacy_reduction = (
+        latent_digital_literacy * SIM_CONFIG["digital_literacy_reduction"]
+    )
 
     # no session is shorter than 10 seconds
     session_duration_seconds = np.maximum(
-        SIM_CONFIG["session_base_min_seconds"], base_duration - savviness_reduction
+        SIM_CONFIG["session_base_min_seconds"], base_duration - literacy_reduction
     ).astype(int)
 
     # NOTE: generated outliers for duration seconds
@@ -99,16 +113,26 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     ).astype(int)
     session_duration_seconds = session_duration_seconds.tolist()
 
-    # device OS versions
-    base_os_array = rng.choice(
-        SIM_CONFIG["os_distribution"],
-        size=total_sessions,
-        p=SIM_CONFIG["os_weights"],
-    )
+    # device OS versions | NOTE: conditioned on income bracket
+    income = exploded_users["latent_income_score"].to_numpy()
+    income_thresholds = SIM_CONFIG["income_os_thresholds"]
+    income_tier = np.full(total_sessions, "mid", dtype=object)
+    income_tier[income < income_thresholds[0]] = "low"
+    income_tier[income >= income_thresholds[1]] = "high"
+
+    income_tier_names = list(SIM_CONFIG["os_by_income"].keys())
+    base_os = np.empty(total_sessions, dtype=object)
+    for tier in income_tier_names:
+        mask = income_tier == tier
+        base_os[mask] = rng.choice(
+            SIM_CONFIG["os_distribution"],
+            size=mask.sum(),
+            p=SIM_CONFIG["os_by_income"][tier],
+        )
 
     device_os_version = []
     device_group = []
-    for os_type in base_os_array:
+    for os_type in base_os:
         if os_type == "Android":
             version = rng.choice(
                 SIM_CONFIG["android_software_version"],

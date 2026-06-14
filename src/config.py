@@ -18,14 +18,20 @@ SIM_CONFIG = {
     "session_base_min_seconds": 10,
     "os_distribution": ["Android", "iOS", "Windows", "macOS"],
     "os_weights": [0.40, 0.25, 0.20, 0.15],
-    "android_software_version": ["14", "13", "12", "11"],
+    "os_by_income": {
+        "low": {"weights": [0.55, 0.20, 0.15, 0.10]},
+        "mid": {"weights": [0.38, 0.25, 0.20, 0.17]},
+        "high": {"weights": [0.25, 0.30, 0.25, 0.20]},
+    },
+    "income_os_thresholds": [-0.44, 0.44],
+    "android_software_version": [0.50, 0.30, 0.15, 0.05],
     "android_software_version_weights": [0.5, 0.3, 0.15, 0.05],
     "ios_software_version": ["17.3", "16.5", "15.2"],
     "ios_software_version_weights": [0.6, 0.3, 0.1],
     "windows_software_version": ["11", "10"],
     "windows_software_version_weights": [0.7, 0.3],
     "macos_software_version": ["Sonoma", "Ventura", "Monterey"],
-    "savviness_time_reduction": 150,
+    "digital_literacy_reduction": 150,
     # NOTE: think about the degredation of data more
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
@@ -57,13 +63,9 @@ SIM_CONFIG = {
     "promo_code_probability": 0.25,
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
     "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
+    "payment_methods": ["COD", "GCash", "Maya", "Credit Card", "Bank Transfer"],
+    "payment_method_weights": [0.35, 0.25, 0.25, 0.15, 0.10],
     # data degredation
-    # null rates (fraction of rows)
-    "null_rate_device_os": 0.03,
-    "null_rate_channel": 0.02,
-    "null_rate_viewed_category": 0.01,
-    "null_rate_discount": 0.10,
-    "null_rate_item_price": 0.01,
     # duplicate rate
     "dup_rate_events": 0.005,
     # outlier rates
@@ -71,6 +73,12 @@ SIM_CONFIG = {
     "outlier_duration_multiplier": 10,
     "outlier_rate_item_price": 0.005,
     "outlier_price_multiplier": 100,
+    "channel_weights_by_literacy": {
+        "low": [0.50, 0.20, 0.25, 0.05],
+        "mid": [0.38, 0.32, 0.18, 0.12],
+        "high": [0.25, 0.35, 0.10, 0.30],
+    },
+    "literacy_thresholds": [0.33, 0.67],
     "regions": {
         "NCR": {
             "weight": 0.35,

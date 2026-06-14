@@ -1,6 +1,5 @@
 import os
 import numpy as np
-
 from config import SIM_CONFIG
 from users import generate_users
 from sessions import generate_sessions
@@ -16,7 +15,7 @@ if __name__ == "__main__":
     test_users_df = generate_users(20, rng)
     test_sessions_df = generate_sessions(test_users_df, rng)
     test_events_df = generate_events(test_sessions_df, test_users_df, rng)
-    test_orders_df = generate_orders(test_events_df, test_sessions_df)
+    test_orders_df = generate_orders(test_events_df, test_sessions_df, rng)
     test_order_items_df = generate_order_items(test_orders_df, test_users_df, rng)
 
     print("\nTEST: GENERATED USERS")
@@ -54,7 +53,11 @@ if __name__ == "__main__":
     os.makedirs("data", exist_ok=True)
 
     clean_users_df = test_users_df.drop(
-        columns=["latent_income_score", "latent_tech_savviness"]
+        columns=[
+            "latent_income_score",
+            "latent_digital_literacy",
+            "latent_trust_in_platform",
+        ]
     )
 
     sorted_test_events_df = test_events_df.sort_values(

@@ -1,8 +1,12 @@
 import fastuuid
 import pandas as pd
+import numpy as np
+from config import SIM_CONFIG
 
 
-def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
+def generate_orders(
+    df_events: pd.DataFrame, df_sessions: pd.DataFrame, rng: np.random.Generator
+):
     # only get purchase
     purchase = df_events[df_events["event_type"] == "purchase"].copy()
     print(f"Generating {len(purchase)} orders for purchases events")
@@ -19,6 +23,12 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
 
     order_timestamp = purchase["event_timestamp"].tolist()
 
+    payment_method = rng.choice(
+        SIM_CONFIG["payment_methods"],
+        size=len(purchase),
+        p=SIM_CONFIG["payment_method_weights"],
+    )
+
     # turn into dataframe (pandas)
     df_orders = pd.DataFrame(
         {
@@ -26,6 +36,7 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
             "session_id": session_id_fk,
             "user_id": user_id_fk,
             "order_timestamp": order_timestamp,
+            "payment_methods": payment_method,
         }
     )
     return df_orders
