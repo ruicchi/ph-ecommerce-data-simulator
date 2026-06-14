@@ -1,4 +1,4 @@
-import uuid
+import fastuuid
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -9,10 +9,7 @@ def generate_users(total_users: int, rng: np.random.Generator):
     print(f"Generating {total_users} users")
 
     # user primary keys
-    user_ids = []
-    for _ in range(total_users):
-        new_id = str(uuid.uuid4())
-        user_ids.append(new_id)
+    user_id = fastuuid.uuid7_as_strings_bulk(total_users)
 
     # account created timestamps
     base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
@@ -47,7 +44,7 @@ def generate_users(total_users: int, rng: np.random.Generator):
     # turn into dataframe (pandas)
     df_users = pd.DataFrame(
         {
-            "user_id": user_ids,
+            "user_id": user_id,
             "account_created_at": created_at,
             "city": city,
             "region": region,

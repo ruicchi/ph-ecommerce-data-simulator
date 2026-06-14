@@ -1,4 +1,4 @@
-import uuid
+import fastuuid
 import pandas as pd
 import numpy as np
 from config import SIM_CONFIG
@@ -28,10 +28,7 @@ def generate_order_items(
     ].reset_index(drop=True)
 
     # generate columns (vectors-style)
-    item_id_list = []
-    for _ in range(total_items):
-        new_id = str(uuid.uuid4())
-        item_id_list.append(new_id)
+    item_id_list = fastuuid.uuid7_as_strings_bulk(total_items)
 
     item_order_fk = exploded_orders["order_id"].tolist()
 

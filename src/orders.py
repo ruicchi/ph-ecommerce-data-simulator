@@ -1,4 +1,4 @@
-import uuid
+import fastuuid
 import pandas as pd
 
 
@@ -11,10 +11,7 @@ def generate_orders(df_events: pd.DataFrame, df_sessions: pd.DataFrame):
         df_sessions[["session_id", "user_id"]], on="session_id", how="left"
     )
 
-    order_id = []
-    for _ in range(len(purchase)):
-        new_id = str(uuid.uuid4())
-        order_id.append(new_id)
+    order_id = fastuuid.uuid7_as_strings_bulk(len(purchase))
 
     session_id_fk = purchase["session_id"].tolist()
 

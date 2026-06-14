@@ -1,4 +1,4 @@
-import uuid
+import fastuuid
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -22,10 +22,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     )
 
     # session primary keys
-    session_id = []
-    for _ in range(total_sessions):
-        new_id = str(uuid.uuid4())
-        session_id.append(new_id)
+    session_id = fastuuid.uuid7_as_strings_bulk(total_sessions)
 
     # parent foreign keys
     user_id_fk = exploded_users["user_id"].tolist()
