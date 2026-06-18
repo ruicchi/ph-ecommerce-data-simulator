@@ -21,7 +21,7 @@ def generate_users(total_users: int, rng: np.random.Generator):
         past_date = base_date - timedelta(days=int(days), seconds=int(seconds))
         created_at.append(past_date)
 
-    # engine for latent variables (numpy) | creates a gaussian distribution | NOTE: this might change, defeats the purpose of funnel optimization analyst
+    # engine for latent variables (numpy) | creates a gaussian distribution
     latent_income_score = rng.normal(loc=0, scale=1.0, size=total_users)
     latent_digital_literacy = rng.uniform(low=0, high=1.0, size=total_users)
     latent_trust_in_platform = rng.beta(a=2, b=5, size=total_users)
@@ -34,6 +34,7 @@ def generate_users(total_users: int, rng: np.random.Generator):
         region_weights.append(weight)
     region = rng.choice(region_names, size=total_users, p=region_weights)
 
+    # number of days a user has been active since first visit or purchase
     user_tenure_days = days_ago_array
 
     city = []

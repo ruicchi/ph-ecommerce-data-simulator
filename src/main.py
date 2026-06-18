@@ -9,14 +9,27 @@ from order_items import generate_order_items
 
 # TEST: FOR TESTING ONLY
 if __name__ == "__main__":
-    rng = np.random.default_rng(SIM_CONFIG["random_seed"])
+    master_ss = np.random.SeedSequence(SIM_CONFIG["random_seed"])
+    stage_seeds = master_ss.spawn(5)
+    users_rng = np.random.default_rng(stage_seeds[0])
+    sessions_rng = np.random.default_rng(stage_seeds[1])
+    events_rng = np.random.default_rng(stage_seeds[2])
+    orders_rng = np.random.default_rng(stage_seeds[3])
+    order_items_rng = np.random.default_rng(stage_seeds[4])
+
+    n_workers = SIM_CONFIG.get("n_workers", 1)
+
     # test_users_df = generate_users(SIM_CONFIG["target_users"])
 
-    test_users_df = generate_users(20, rng)
-    test_sessions_df = generate_sessions(test_users_df, rng)
-    test_events_df = generate_events(test_sessions_df, test_users_df, rng)
-    test_orders_df = generate_orders(test_events_df, test_sessions_df, rng)
-    test_order_items_df = generate_order_items(test_orders_df, test_users_df, rng)
+    test_users_df = generate_users(10, users_rng)
+    test_sessions_df = generate_sessions(test_users_df, sessions_rng)
+    test_events_df = generate_events(
+        test_sessions_df, test_users_df, events_rng, n_workers
+    )
+    test_orders_df = generate_orders(test_events_df, test_sessions_df, orders_rng)
+    test_order_items_df = generate_order_items(
+        test_orders_df, test_users_df, order_items_rng
+    )
 
     print("\nTEST: GENERATED USERS")
     print(test_users_df)

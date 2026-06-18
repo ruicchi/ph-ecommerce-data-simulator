@@ -3,6 +3,7 @@ SIM_CONFIG = {
     "random_seed": 42,
     "as_of_date": "2023-12-31",
     "target_users": 1000000,
+    "n_workers": 1,
     # user config
     "android_share": 0.65,
     "ios_share": 0.35,

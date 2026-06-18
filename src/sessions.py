@@ -16,7 +16,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
 
     print(f"Generating {total_sessions} sessions")
 
-    # repeat the parent rows so they line with total_sessions
+    # match the sessions to the total of users
     exploded_users = df_users.loc[df_users.index.repeat(sessions_per_user)].reset_index(
         drop=True
     )
@@ -37,7 +37,10 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     parent_created_at = exploded_users["account_created_at"].tolist()
     base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
 
-    lifespan_days = [(base_date - created).days for created in parent_created_at]
+    lifespan_days = []
+    for created in parent_created_at:
+        time_delta = base_date - created
+        lifespan_days.append(time_delta.days)
 
     is_burst_session = rng.choice(
         [True, False], size=total_sessions, p=SIM_CONFIG["burst_session_weights"]
@@ -52,8 +55,8 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
 
     random_days_array = np.minimum(raw_days, lifespan_days).astype(int)
 
-    chosen_peaks = rng.choice(SIM_CONFIG["peak_hours"], size=total_sessions)
-    normal_dist_hours = rng.normal(loc=chosen_peaks, scale=1.0)
+    peak_hours = rng.choice(SIM_CONFIG["peak_hours"], size=total_sessions)
+    normal_dist_hours = rng.normal(loc=peak_hours, scale=1.0)
     random_seconds_array = ((normal_dist_hours % 24) * 3600).astype(int)
 
     # assigns acquisition channel, NOTE: based on digital_literacy
@@ -109,7 +112,14 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             nearest_payday = 15
         else:
             nearest_payday = 30
-        session_start_time[session_index] = session_start.replace(day=nearest_payday)
+        try:
+            session_start_time[session_index] = session_start.replace(
+                day=nearest_payday
+            )
+        except ValueError:
+            session_start_time[session_index] = session_start.replace(
+                day=min(nearest_payday, 28)
+            )
 
     # session duration | NOTE: exponential decay is based on digital_literacy
     latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
