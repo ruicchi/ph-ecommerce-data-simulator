@@ -90,7 +90,9 @@ def _events_worker(chunk_df, rng_or_seed, config):
     literacy_arr = chunk_df["latent_digital_literacy"].to_numpy(dtype=np.float64)
     trust_arr = chunk_df["latent_trust_in_platform"].to_numpy(dtype=np.float64)
     session_id_arr = chunk_df["session_id"].to_numpy()
-    start_time_ns = chunk_df["session_start_time"].astype("datetime64[ns]").to_numpy(dtype=np.int64)
+    start_time_ns = (
+        chunk_df["session_start_time"].astype("datetime64[ns]").to_numpy(dtype=np.int64)
+    )
     duration_ns = (
         chunk_df["session_duration_seconds"].to_numpy(dtype=np.int64) * 1_000_000_000
     )
