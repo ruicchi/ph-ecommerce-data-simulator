@@ -83,16 +83,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         start_date = created_date + timedelta(days=int(days), seconds=int(seconds))
         session_start_time.append(start_date)
 
-    session_date = []
-    is_weekend = []
-    for start_time in session_start_time:
-        date_only = start_time.date()
-        session_date.append(date_only)
-        weekday_num = start_time.weekday()
-        is_weekend_value = weekday_num >= 5
-        is_weekend.append(is_weekend_value)
-
-    # payday spike: 15th or 30th | NOTE: i'm not sure if this is a correct implementation for this
+    # payday shift
     payday_dates = SIM_CONFIG["payday_dates"]
     shift_probability = 0.12
 
@@ -121,6 +112,16 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                 day=min(nearest_payday, 28)
             )
 
+    # date extraction
+    session_date = []
+    is_weekend = []
+    for start_time in session_start_time:
+        date_only = start_time.date()
+        session_date.append(date_only)
+        weekday_num = start_time.weekday()
+        is_weekend_value = weekday_num >= 5  # 5 is saturday, 6 is sunday
+        is_weekend.append(is_weekend_value)
+
     # session duration | NOTE: exponential decay is based on digital_literacy
     latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
     base_duration = rng.exponential(
@@ -130,9 +131,12 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         latent_digital_literacy * SIM_CONFIG["digital_literacy_reduction"]
     )
 
+    noise = rng.normal(loc=0, scale=30, size=total_sessions)
+
     # no session is shorter than 10 seconds
     session_duration_seconds = np.maximum(
-        SIM_CONFIG["session_base_min_seconds"], base_duration - literacy_reduction
+        SIM_CONFIG["session_base_min_seconds"],
+        base_duration - literacy_reduction + noise,
     ).astype(int)
 
     # NOTE: generated outliers for duration seconds
@@ -201,7 +205,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             "session_id": session_id,
             "user_id": user_id_fk,
             "session_number": session_number,
-            "acquisition_channel": acq_channel,
+            "acq_channel": acq_channel,
             "session_start_time": session_start_time,
             "session_date": session_date,
             "is_weekend": is_weekend,

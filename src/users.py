@@ -22,7 +22,7 @@ def generate_users(total_users: int, rng: np.random.Generator):
         created_at.append(past_date)
 
     # engine for latent variables (numpy) | creates a gaussian distribution
-    latent_income_score = rng.normal(loc=0, scale=1.0, size=total_users)
+    latent_income_score = rng.lognormal(mean=0, sigma=1.0, size=total_users)
     latent_digital_literacy = rng.uniform(low=0, high=1.0, size=total_users)
     latent_trust_in_platform = rng.beta(a=2, b=5, size=total_users)
 

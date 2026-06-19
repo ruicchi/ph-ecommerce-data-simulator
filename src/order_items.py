@@ -58,7 +58,7 @@ def generate_order_items(
     income_scores = exploded_orders["latent_income_score"].to_numpy()
     noise = rng.normal(0, 10, size=total_items)
     raw_prices = base_prices + (income_scores * 20) + noise
-    base_item_price = np.maximum(9.99, raw_prices).round(2)
+    base_item_price = np.floor(np.maximum(9.99, raw_prices)) + 0.99
     discounted_prices = base_item_price * (1.0 - actual_discount)
     final_item_price = np.maximum(4.99, discounted_prices).round(2)
 
