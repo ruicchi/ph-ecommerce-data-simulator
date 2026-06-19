@@ -4,13 +4,41 @@ import pandas as pd
 import fastuuid
 from config import SIM_CONFIG
 
-_VIEW_ITEM = 0
-_ADD_TO_CART = 1
-_BEGIN_CHECKOUT = 2
-_PURCHASE = 3
-_DROP_OFF = 4
+_SEARCH = 0
+_VIEW_ITEM_LIST = 1
+_SELECT_ITEM = 2
+_VIEW_ITEM = 3
+_ADD_TO_WISHLIST = 4
+_SHARE = 5
+_ADD_TO_CART = 6
+_REMOVE_FROM_CART = 7
+_VIEW_CART = 8
+_BEGIN_CHECKOUT = 9
+_ADD_SHIPPING_INFO = 10
+_ADD_PAYMENT_INFO = 11
+_PURCHASE = 12
+_GENERATE_LEAD = 13
+_REFUND = 14
+_DROP_OFF = 15
 
-_STATE_NAMES = ["view_item", "add_to_cart", "begin_checkout", "purchase", "drop_off"]
+_STATE_NAMES = [
+    "search",
+    "view_item_list",
+    "select_item",
+    "view_item",
+    "add_to_wishlist",
+    "share",
+    "add_to_cart",
+    "remove_from_cart",
+    "view_cart",
+    "begin_checkout",
+    "add_shipping_info",
+    "add_payment_info",
+    "purchase",
+    "generate_lead",
+    "refund",
+    "drop_off",
+]
 
 
 def _build_events_config():
@@ -27,41 +55,166 @@ def _build_events_config():
         "trust_effect": SIM_CONFIG["funnel_checkout_trust_effect"],
         "trust_mean": SIM_CONFIG["funnel_checkout_trust_mean"],
         "trans": {
-            _VIEW_ITEM: (
-                np.array([_VIEW_ITEM, _ADD_TO_CART, _DROP_OFF], dtype=np.int8),
+            _SEARCH: (
+                np.array([_VIEW_ITEM_LIST, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [bt["search"]["view_item_list"], bt["search"]["drop_off"]],
+                    dtype=np.float64,
+                ),
+            ),
+            _VIEW_ITEM_LIST: (
+                np.array([_SELECT_ITEM, _SEARCH, _DROP_OFF], dtype=np.int8),
                 np.array(
                     [
-                        bt["view_item"]["view_item"],
+                        bt["view_item_list"]["select_item"],
+                        bt["view_item_list"]["search"],
+                        bt["view_item_list"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _SELECT_ITEM: (
+                np.array([_VIEW_ITEM, _VIEW_ITEM_LIST, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [
+                        bt["select_item"]["view_item"],
+                        bt["select_item"]["view_item_list"],
+                        bt["select_item"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _VIEW_ITEM: (
+                np.array(
+                    [
+                        _ADD_TO_CART,
+                        _ADD_TO_WISHLIST,
+                        _SHARE,
+                        _VIEW_ITEM_LIST,
+                        _DROP_OFF,
+                    ],
+                    dtype=np.int8,
+                ),
+                np.array(
+                    [
                         bt["view_item"]["add_to_cart"],
+                        bt["view_item"]["add_to_wishlist"],
+                        bt["view_item"]["share"],
+                        bt["view_item"]["view_item_list"],
                         bt["view_item"]["drop_off"],
                     ],
                     dtype=np.float64,
                 ),
             ),
-            _ADD_TO_CART: (
-                np.array([_VIEW_ITEM, _BEGIN_CHECKOUT, _DROP_OFF], dtype=np.int8),
+            _ADD_TO_WISHLIST: (
+                np.array([_VIEW_ITEM, _DROP_OFF], dtype=np.int8),
                 np.array(
                     [
+                        bt["add_to_wishlist"]["view_item"],
+                        bt["add_to_wishlist"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _SHARE: (
+                np.array([_VIEW_ITEM, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [bt["share"]["view_item"], bt["share"]["drop_off"]],
+                    dtype=np.float64,
+                ),
+            ),
+            _ADD_TO_CART: (
+                np.array(
+                    [_VIEW_CART, _VIEW_ITEM, _REMOVE_FROM_CART, _DROP_OFF],
+                    dtype=np.int8,
+                ),
+                np.array(
+                    [
+                        bt["add_to_cart"]["view_cart"],
                         bt["add_to_cart"]["view_item"],
-                        bt["add_to_cart"]["begin_checkout"],
+                        bt["add_to_cart"]["remove_from_cart"],
                         bt["add_to_cart"]["drop_off"],
                     ],
                     dtype=np.float64,
                 ),
             ),
-            _BEGIN_CHECKOUT: (
-                np.array([_PURCHASE, _DROP_OFF], dtype=np.int8),
+            _REMOVE_FROM_CART: (
+                np.array([_VIEW_CART, _VIEW_ITEM, _DROP_OFF], dtype=np.int8),
                 np.array(
                     [
-                        bt["begin_checkout"]["purchase"],
+                        bt["remove_from_cart"]["view_cart"],
+                        bt["remove_from_cart"]["view_item"],
+                        bt["remove_from_cart"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _VIEW_CART: (
+                np.array([_BEGIN_CHECKOUT, _VIEW_ITEM, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [
+                        bt["view_cart"]["begin_checkout"],
+                        bt["view_cart"]["view_item"],
+                        bt["view_cart"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _BEGIN_CHECKOUT: (
+                np.array([_ADD_SHIPPING_INFO, _VIEW_CART, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [
+                        bt["begin_checkout"]["add_shipping_info"],
+                        bt["begin_checkout"]["view_cart"],
                         bt["begin_checkout"]["drop_off"],
                     ],
                     dtype=np.float64,
                 ),
             ),
+            _ADD_SHIPPING_INFO: (
+                np.array([_ADD_PAYMENT_INFO, _VIEW_CART, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [
+                        bt["add_shipping_info"]["add_payment_info"],
+                        bt["add_shipping_info"]["view_cart"],
+                        bt["add_shipping_info"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _ADD_PAYMENT_INFO: (
+                np.array([_PURCHASE, _VIEW_CART, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [
+                        bt["add_payment_info"]["purchase"],
+                        bt["add_payment_info"]["view_cart"],
+                        bt["add_payment_info"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
             _PURCHASE: (
+                np.array([_GENERATE_LEAD, _REFUND, _DROP_OFF], dtype=np.int8),
+                np.array(
+                    [
+                        bt["purchase"]["generate_lead"],
+                        bt["purchase"]["refund"],
+                        bt["purchase"]["drop_off"],
+                    ],
+                    dtype=np.float64,
+                ),
+            ),
+            _GENERATE_LEAD: (
                 np.array([_DROP_OFF], dtype=np.int8),
-                np.array([1.0], dtype=np.float64),
+                np.array([bt["generate_lead"]["drop_off"]], dtype=np.float64),
+            ),
+            _REFUND: (
+                np.array([_DROP_OFF], dtype=np.int8),
+                np.array([bt["refund"]["drop_off"]], dtype=np.float64),
+            ),
+            _DROP_OFF: (
+                np.array([_DROP_OFF], dtype=np.int8),
+                np.array([bt["drop_off"]["drop_off"]], dtype=np.float64),
             ),
         },
     }
@@ -158,15 +311,15 @@ def _events_worker(chunk_df, rng_or_seed, config):
             probs = base_probs.copy()
 
             if current_state == _VIEW_ITEM:
-                probs[1] += literacy_effect * literacy
-                probs[2] -= literacy_effect * literacy
+                probs[0] += literacy_effect * literacy
+                probs[4] -= literacy_effect * literacy
                 if is_mobile:
-                    probs[1] += mobile_penalty
-                    probs[2] -= mobile_penalty
+                    probs[0] += mobile_penalty
+                    probs[4] -= mobile_penalty
             elif current_state == _BEGIN_CHECKOUT:
                 adj = trust_effect * (trust - trust_mean)
                 probs[0] += adj
-                probs[1] -= adj
+                probs[2] -= adj
 
             np.clip(probs, 0.001, 0.999, out=probs)
             probs /= probs.sum()

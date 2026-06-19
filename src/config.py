@@ -1,15 +1,13 @@
 # NOTE: this will change, depending on the configurables based on the funnel optimization analyst
 SIM_CONFIG = {
     "random_seed": 42,
-    "as_of_date": "2023-12-31",
+    "as_of_date": "2024-12-31",
     "target_users": 1000000,
     "n_workers": 1,
-    # user config
     "android_share": 0.65,
     "ios_share": 0.35,
     "channels": ["Organic", "Facebook", "TikTok", "Direct"],
     "channel_weights": [0.40, 0.30, 0.20, 0.10],
-    # session config
     "session_count": [1, 2, 3, 4, 5, 8, 15],
     "session_count_weights": [0.65, 0.15, 0.08, 0.05, 0.04, 0.02, 0.01],
     "burst_session_weights": [0.70, 0.30],
@@ -20,8 +18,8 @@ SIM_CONFIG = {
     "os_distribution": ["Android", "iOS", "Windows", "macOS"],
     "os_weights": [0.40, 0.25, 0.20, 0.15],
     "os_by_income": {
-        "low": [0.55, 0.20, 0.15, 0.10],
-        "mid": [0.38, 0.25, 0.20, 0.17],
+        "low": [0.36, 0.26, 0.22, 0.16],
+        "mid": [0.32, 0.22, 0.26, 0.20],
         "high": [0.25, 0.30, 0.25, 0.20],
     },
     "income_os_thresholds": [0.65, 1.4],
@@ -33,43 +31,89 @@ SIM_CONFIG = {
     "windows_software_version_weights": [0.7, 0.3],
     "macos_software_version": ["Sonoma", "Ventura", "Monterey"],
     "digital_literacy_reduction": 150,
-    # NOTE: think about the degredation of data more
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
     # events config
     "event_spacing_scale_seconds": 30,
     "base_transactions": {
-        # if user is viewing an item
-        "view_item": {"view_item": 0.40, "add_to_cart": 0.30, "drop_off": 0.30},
-        # if user added to cart
-        "add_to_cart": {"view_item": 0.20, "begin_checkout": 0.50, "drop_off": 0.30},
-        # if user begins checkout
-        "begin_checkout": {"purchase": 0.40, "drop_off": 0.60},
-        # end states (if user purchases or drop off, session is over
-        "purchase": {"drop_off": 1.0},
+        # Top of Funnel
+        "search": {"view_item_list": 0.70, "drop_off": 0.30},
+        "view_item_list": {"select_item": 0.60, "search": 0.20, "drop_off": 0.20},
+        "select_item": {"view_item": 0.80, "view_item_list": 0.10, "drop_off": 0.10},
+        # Mid Funnel
+        "view_item": {
+            "add_to_cart": 0.30,
+            "add_to_wishlist": 0.10,
+            "share": 0.05,
+            "view_item_list": 0.25,
+            "drop_off": 0.30,
+        },
+        "add_to_wishlist": {"view_item": 0.60, "drop_off": 0.40},
+        "share": {"view_item": 0.50, "drop_off": 0.50},
+        # Cart Management
+        "add_to_cart": {
+            "view_cart": 0.50,
+            "view_item": 0.30,
+            "remove_from_cart": 0.05,
+            "drop_off": 0.15,
+        },
+        "remove_from_cart": {"view_cart": 0.40, "view_item": 0.30, "drop_off": 0.30},
+        "view_cart": {"begin_checkout": 0.50, "view_item": 0.20, "drop_off": 0.30},
+        # Checkout Flow
+        "begin_checkout": {
+            "add_shipping_info": 0.70,
+            "view_cart": 0.10,
+            "drop_off": 0.20,
+        },
+        "add_shipping_info": {
+            "add_payment_info": 0.80,
+            "view_cart": 0.05,
+            "drop_off": 0.15,
+        },
+        "add_payment_info": {"purchase": 0.85, "view_cart": 0.05, "drop_off": 0.10},
+        # Post-Purchase
+        "purchase": {"generate_lead": 0.20, "refund": 0.01, "drop_off": 0.79},
+        "generate_lead": {"drop_off": 1.0},
+        "refund": {"drop_off": 1.0},
         "drop_off": {"drop_off": 1.0},
     },
     "items_per_order_counts": [1, 2, 3, 4, 5],
     "items_per_order_weights": [0.50, 0.30, 0.10, 0.05, 0.05],
     "item_quantity_counts": [1, 2, 3, 5],
     "item_quantity_weights": [0.85, 0.10, 0.04, 0.01],
-    "product_categories": ["Apparel", "Electronics", "Home Goods", "Consumables"],
-    "product_category_weights": [0.50, 0.20, 0.15, 0.15],
+    "product_categories": [
+        "Fashion and apparel",
+        "Beauty and personal care",
+        "Food and beverage",
+        "Consumer electronics",
+        "Furniture and home appliances",
+        "Lifestyle and fitness",
+        "Baby and Kids",
+    ],
+    "product_category_weights": [0.20, 0.20, 0.15, 0.15, 0.10, 0.10, 0.10],
     "category_base_prices": {
-        "Apparel": 35.00,
-        "Electronics": 250.00,
-        "Home Goods": 85.00,
-        "Consumables": 15.00,
+        "Fashion and apparel": 35.00,
+        "Beauty and personal care": 250.00,
+        "Food and beverage": 85.00,
+        "Consumer electronics": 15.00,
+        "Furniture and home appliances": 26.00,
+        "Lifestyle and fitness": 50.00,
+        "Baby and Kids": 100.00,
     },
     "promo_code_probability": 0.25,
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
     "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
-    "payment_methods": ["COD", "GCash", "Maya", "Credit Card", "Bank Transfer"],
-    "payment_method_weights": [0.25, 0.25, 0.25, 0.15, 0.10],
-    # data degredation
-    # duplicate rate
+    "payment_methods": [
+        "Digital Wallet",
+        "Credit Card",
+        "Bank Transfer",
+        "COD",
+        "Debit Card",
+        "Cash Payments",
+        "Buy Now Pay Later",
+    ],
+    "payment_method_weights": [0.10, 0.10, 0.10, 0.15, 0.10, 0.25, 0.20],
     "dup_rate_events": 0.005,
-    # outlier rates
     "outlier_rate_session_duration": 0.01,
     "outlier_duration_multiplier": 10,
     "outlier_rate_item_price": 0.005,
