@@ -24,7 +24,7 @@ SIM_CONFIG = {
         "mid": [0.38, 0.25, 0.20, 0.17],
         "high": [0.25, 0.30, 0.25, 0.20],
     },
-    "income_os_thresholds": [-0.44, 0.44],
+    "income_os_thresholds": [0.65, 1.4],
     "android_software_version": [14, 13, 12, 11],
     "android_software_version_weights": [0.5, 0.3, 0.15, 0.05],
     "ios_software_version": ["17.3", "16.5", "15.2"],

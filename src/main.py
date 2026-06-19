@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     # test_users_df = generate_users(SIM_CONFIG["target_users"])
 
-    test_users_df = generate_users(10, users_rng)
+    test_users_df = generate_users(100, users_rng)
     test_sessions_df = generate_sessions(test_users_df, sessions_rng)
     test_events_df = generate_events(
         test_sessions_df, test_users_df, events_rng, n_workers
