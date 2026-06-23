@@ -33,14 +33,13 @@ SIM_CONFIG = {
     "digital_literacy_reduction": 150,
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
-    # events config
     "event_spacing_scale_seconds": 30,
     "base_transactions": {
-        # Top of Funnel
+        # top of funnel
         "search": {"view_item_list": 0.70, "drop_off": 0.30},
         "view_item_list": {"select_item": 0.60, "search": 0.20, "drop_off": 0.20},
         "select_item": {"view_item": 0.80, "view_item_list": 0.10, "drop_off": 0.10},
-        # Mid Funnel
+        # mid funnel
         "view_item": {
             "add_to_cart": 0.30,
             "add_to_wishlist": 0.10,
@@ -50,7 +49,7 @@ SIM_CONFIG = {
         },
         "add_to_wishlist": {"view_item": 0.60, "drop_off": 0.40},
         "share": {"view_item": 0.50, "drop_off": 0.50},
-        # Cart Management
+        # cart management
         "add_to_cart": {
             "view_cart": 0.50,
             "view_item": 0.30,
@@ -59,8 +58,8 @@ SIM_CONFIG = {
         },
         "remove_from_cart": {"view_cart": 0.40, "view_item": 0.30, "drop_off": 0.30},
         "view_cart": {"begin_checkout": 0.50, "view_item": 0.20, "drop_off": 0.30},
-        # Checkout Flow
         "begin_checkout": {
+            # checkout flow
             "add_shipping_info": 0.70,
             "view_cart": 0.10,
             "drop_off": 0.20,
@@ -71,7 +70,7 @@ SIM_CONFIG = {
             "drop_off": 0.15,
         },
         "add_payment_info": {"purchase": 0.85, "view_cart": 0.05, "drop_off": 0.10},
-        # Post-Purchase
+        # post-purchase
         "purchase": {"generate_lead": 0.20, "refund": 0.01, "drop_off": 0.79},
         "generate_lead": {"drop_off": 1.0},
         "refund": {"drop_off": 1.0},
@@ -88,7 +87,7 @@ SIM_CONFIG = {
         "Consumer electronics",
         "Furniture and home appliances",
         "Lifestyle and fitness",
-        "Baby and Kids",
+        "Baby and kids",
     ],
     "product_category_weights": [0.20, 0.20, 0.15, 0.15, 0.10, 0.10, 0.10],
     "category_base_prices": {
@@ -98,7 +97,7 @@ SIM_CONFIG = {
         "Consumer electronics": 15.00,
         "Furniture and home appliances": 26.00,
         "Lifestyle and fitness": 50.00,
-        "Baby and Kids": 100.00,
+        "Baby and kids": 100.00,
     },
     "promo_code_probability": 0.25,
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],

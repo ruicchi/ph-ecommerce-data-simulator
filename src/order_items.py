@@ -80,5 +80,9 @@ def generate_order_items(
         }
     )
 
+    df_order_items["product_category"] = df_order_items["product_category"].astype(
+        "category"
+    )
+
     print("order items table generated!")
     return df_order_items

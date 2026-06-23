@@ -36,7 +36,7 @@ def generate_orders(
             "session_id": session_id_fk,
             "user_id": user_id_fk,
             "order_timestamp": order_timestamp,
-            "payment_methods": payment_method,
+            "payment_method": payment_method,
         }
     )
     return df_orders
