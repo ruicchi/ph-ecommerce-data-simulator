@@ -15,7 +15,6 @@ def generate_order_items(
 
     num_orders = len(working_df)
 
-    # NOTE: vectorized math
     items_per_order = rng.choice(
         SIM_CONFIG["items_per_order_counts"],
         size=num_orders,
@@ -27,7 +26,6 @@ def generate_order_items(
         working_df.index.repeat(items_per_order)
     ].reset_index(drop=True)
 
-    # generate columns (vectors-style)
     item_id_list = fastuuid.uuid7_as_strings_bulk(total_items)
 
     item_order_fk = exploded_orders["order_id"].tolist()
@@ -38,7 +36,6 @@ def generate_order_items(
         p=SIM_CONFIG["item_quantity_weights"],
     )
 
-    # pricing logic
     item_category = rng.choice(
         SIM_CONFIG["product_categories"],
         size=total_items,
@@ -62,7 +59,6 @@ def generate_order_items(
     discounted_prices = base_item_price * (1.0 - actual_discount)
     final_item_price = np.maximum(4.99, discounted_prices).round(2)
 
-    # NOTE: generated outliers in item price (x100 item price)
     outlier_mask = rng.random(size=total_items) < SIM_CONFIG["outlier_rate_item_price"]
     final_item_price[outlier_mask] = (
         final_item_price[outlier_mask] * SIM_CONFIG["outlier_price_multiplier"]
