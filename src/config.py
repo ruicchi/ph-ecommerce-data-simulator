@@ -126,7 +126,7 @@ SIM_CONFIG = {
     "item_quantity_counts": [1, 2, 3, 5],
     "item_quantity_weights": [0.85, 0.10, 0.04, 0.01],
     "item_categories": [
-        "fashion_and_apparell",
+        "fashion_and_apparel",
         "beauty_and_personal_care",
         "food_and_beverage",
         "consumer_electronics",
@@ -136,7 +136,7 @@ SIM_CONFIG = {
     ],
     "item_category_weights": [0.20, 0.20, 0.15, 0.15, 0.10, 0.10, 0.10],
     "category_base_prices": {
-        "fashion_and_apparell": 35.00,
+        "fashion_and_apparel": 35.00,
         "beauty_and_personal_care": 250.00,
         "food_and_beverage": 85.00,
         "consumer_electronics": 15.00,

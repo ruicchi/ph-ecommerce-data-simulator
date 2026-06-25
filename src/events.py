@@ -342,7 +342,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             error_message.append("ERR_SESSION_TIMEOUT")
             viewed_category.append(current_category)
 
-    return pd.DataFrame(
+    df_events = pd.DataFrame(
         {
             "event_id": event_id,
             "session_id": session_id_fk,
@@ -354,6 +354,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             "android_error": error_message,
         }
     )
+    return df_events[df_events["event_name"] != "drop_off"].reset_index(drop=True)
 
 
 def generate_events(df_sessions, df_users, rng, n_workers=1):

@@ -7,7 +7,6 @@ from config import SIM_CONFIG
 def generate_orders(
     df_events: pd.DataFrame, df_sessions: pd.DataFrame, rng: np.random.Generator
 ):
-    # only get purchase
     purchase = df_events[df_events["event_name"] == "purchase"].copy()
     print(f"Generating {len(purchase)} orders for purchases events")
 
