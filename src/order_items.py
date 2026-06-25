@@ -26,7 +26,7 @@ def generate_order_items(
         working_df.index.repeat(items_per_order)
     ].reset_index(drop=True)
 
-    item_id_list = fastuuid.uuid7_as_strings_bulk(total_items)
+    item_id_list = fastuuid.uuid4_as_strings_bulk(total_items)
 
     item_order_fk = exploded_orders["order_id"].tolist()
 

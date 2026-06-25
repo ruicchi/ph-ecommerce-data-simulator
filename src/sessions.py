@@ -21,7 +21,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         drop=True
     )
 
-    session_id = fastuuid.uuid7_as_strings_bulk(total_sessions)
+    session_id = fastuuid.uuid4_as_strings_bulk(total_sessions)
 
     user_id_fk = exploded_users["user_id"].tolist()
 

@@ -15,7 +15,7 @@ def generate_orders(
         df_sessions[["session_id", "user_id"]], on="session_id", how="left"
     )
 
-    order_id = fastuuid.uuid7_as_strings_bulk(len(purchase))
+    order_id = fastuuid.uuid4_as_strings_bulk(len(purchase))
 
     session_id_fk = purchase["session_id"].tolist()
 

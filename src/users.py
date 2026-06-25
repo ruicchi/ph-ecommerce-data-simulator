@@ -8,7 +8,7 @@ from config import SIM_CONFIG
 def generate_users(total_users: int, rng: np.random.Generator):
     print(f"Generating {total_users} users")
 
-    user_id = fastuuid.uuid7_as_strings_bulk(total_users)
+    user_id = fastuuid.uuid4_as_strings_bulk(total_users)
 
     base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
     days_ago_array = rng.integers(0, 365, size=total_users)

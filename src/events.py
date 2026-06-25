@@ -285,7 +285,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             ):
                 error = android_error_string
 
-            event_id.append(str(fastuuid.uuid7()))
+            event_id.append(str(fastuuid.uuid4()))
             session_id_fk.append(session_id_arr[i])
             event_timestamp_ns.append(current_time)
             event_type_int.append(current_state)
@@ -293,7 +293,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             viewed_category.append(current_category)
 
             if rng.random() < dup_rate:
-                event_id.append(str(fastuuid.uuid7()))
+                event_id.append(str(fastuuid.uuid4()))
                 session_id_fk.append(session_id_arr[i])
                 event_timestamp_ns.append(current_time)
                 event_type_int.append(current_state)
@@ -335,7 +335,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             current_time += int(rng.exponential(scale=avg_wait)) * 1_000_000_000
 
         if current_state not in (_DROP_OFF, _PURCHASE):
-            event_id.append(str(fastuuid.uuid7()))
+            event_id.append(str(fastuuid.uuid4()))
             session_id_fk.append(session_id_arr[i])
             event_timestamp_ns.append(time_limit)
             event_type_int.append(_DROP_OFF)
