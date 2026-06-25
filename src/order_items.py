@@ -69,7 +69,8 @@ def generate_order_items(
             "order_item_id": item_id_list,
             "order_id": item_order_fk,
             "product_category": item_category,
-            "item_price": final_item_price,
+            "base_item_price": base_item_price,
+            "final_item_price": final_item_price,
             "quantity": item_quantity,
             "discount_percentage": actual_discount,
         }

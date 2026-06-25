@@ -14,10 +14,10 @@ def generate_users(total_users: int, rng: np.random.Generator):
     days_ago_array = rng.integers(0, 365, size=total_users)
     seconds_ago_array = rng.integers(0, 86400, size=total_users)
 
-    created_at = []
+    user_first_touch_timestamp = []
     for days, seconds in zip(days_ago_array, seconds_ago_array):
         past_date = base_date - timedelta(days=int(days), seconds=int(seconds))
-        created_at.append(past_date)
+        user_first_touch_timestamp.append(past_date)
 
     latent_income_score = rng.lognormal(mean=0, sigma=1.0, size=total_users)
     latent_digital_literacy = rng.uniform(low=0, high=1.0, size=total_users)
@@ -43,7 +43,7 @@ def generate_users(total_users: int, rng: np.random.Generator):
     df_users = pd.DataFrame(
         {
             "user_id": user_id,
-            "account_created_at": created_at,
+            "account_created_at": user_first_touch_timestamp,
             "city": city,
             "region": region,
             "user_tenure_days": user_tenure_days,
