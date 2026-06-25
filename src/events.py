@@ -44,8 +44,8 @@ _STATE_NAMES = [
 def _build_events_config():
     bt = SIM_CONFIG["base_transactions"]
     return {
-        "categories": SIM_CONFIG["product_categories"],
-        "cat_cdf": np.cumsum(SIM_CONFIG["product_category_weights"]),
+        "categories": SIM_CONFIG["item_categories"],
+        "cat_cdf": np.cumsum(SIM_CONFIG["item_category_weights"]),
         "avg_wait": SIM_CONFIG["event_spacing_scale_seconds"],
         "android_error_rate": SIM_CONFIG["android_error_rate"],
         "android_error_string": SIM_CONFIG["android_error_string"],
@@ -255,7 +255,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
     event_id = []
     session_id_fk = []
     event_timestamp_ns = []
-    event_type_int = []
+    event_name_int = []
     error_message = []
     viewed_category = []
 
@@ -288,7 +288,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             event_id.append(str(fastuuid.uuid4()))
             session_id_fk.append(session_id_arr[i])
             event_timestamp_ns.append(current_time)
-            event_type_int.append(current_state)
+            event_name_int.append(current_state)
             error_message.append(error)
             viewed_category.append(current_category)
 
@@ -296,7 +296,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
                 event_id.append(str(fastuuid.uuid4()))
                 session_id_fk.append(session_id_arr[i])
                 event_timestamp_ns.append(current_time)
-                event_type_int.append(current_state)
+                event_name_int.append(current_state)
                 error_message.append(error)
                 viewed_category.append(current_category)
 
@@ -338,7 +338,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             event_id.append(str(fastuuid.uuid4()))
             session_id_fk.append(session_id_arr[i])
             event_timestamp_ns.append(time_limit)
-            event_type_int.append(_DROP_OFF)
+            event_name_int.append(_DROP_OFF)
             error_message.append("ERR_SESSION_TIMEOUT")
             viewed_category.append(current_category)
 
@@ -349,7 +349,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             "event_timestamp": pd.to_datetime(
                 np.array(event_timestamp_ns, dtype=np.int64)
             ),
-            "event_type": [_STATE_NAMES[s] for s in event_type_int],
+            "event_name": [_STATE_NAMES[s] for s in event_name_int],
             "viewed_category": viewed_category,
             "android_error": error_message,
         }

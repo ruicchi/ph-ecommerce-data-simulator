@@ -37,9 +37,9 @@ def generate_order_items(
     )
 
     item_category = rng.choice(
-        SIM_CONFIG["product_categories"],
+        SIM_CONFIG["item_categories"],
         size=total_items,
-        p=SIM_CONFIG["product_category_weights"],
+        p=SIM_CONFIG["item_category_weights"],
     )
     base_prices = (
         pd.Series(item_category).map(SIM_CONFIG["category_base_prices"]).to_numpy()
@@ -68,7 +68,7 @@ def generate_order_items(
         {
             "order_item_id": item_id_list,
             "order_id": item_order_fk,
-            "product_category": item_category,
+            "item_category": item_category,
             "base_item_price": base_item_price,
             "final_item_price": final_item_price,
             "quantity": item_quantity,
@@ -76,9 +76,7 @@ def generate_order_items(
         }
     )
 
-    df_order_items["product_category"] = df_order_items["product_category"].astype(
-        "category"
-    )
+    df_order_items["item_category"] = df_order_items["item_category"].astype("category")
 
     print("order items table generated!")
     return df_order_items

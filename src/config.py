@@ -125,7 +125,7 @@ SIM_CONFIG = {
     "items_per_order_weights": [0.50, 0.30, 0.10, 0.05, 0.05],
     "item_quantity_counts": [1, 2, 3, 5],
     "item_quantity_weights": [0.85, 0.10, 0.04, 0.01],
-    "product_categories": [
+    "item_categories": [
         "fashion_and_apparell",
         "beauty_and_personal_care",
         "food_and_beverage",
@@ -134,7 +134,7 @@ SIM_CONFIG = {
         "lifestyle_and_fitness",
         "baby_and_kids",
     ],
-    "product_category_weights": [0.20, 0.20, 0.15, 0.15, 0.10, 0.10, 0.10],
+    "item_category_weights": [0.20, 0.20, 0.15, 0.15, 0.10, 0.10, 0.10],
     "category_base_prices": {
         "fashion_and_apparell": 35.00,
         "beauty_and_personal_care": 250.00,
@@ -147,16 +147,16 @@ SIM_CONFIG = {
     "promo_code_probability": 0.25,
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
     "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
-    "payment_methods": [
+    "payment_type": [
         "digital_wallet",
         "credit_card",
         "bank_transfer",
         "cod",
-        "debit card",
+        "debit_card",
         "cash_payments",
         "buy_now_pay_later",
     ],
-    "payment_method_weights": [0.10, 0.10, 0.10, 0.15, 0.10, 0.25, 0.20],
+    "payment_type_weights": [0.10, 0.10, 0.10, 0.15, 0.10, 0.25, 0.20],
     "dup_rate_events": 0.005,
     "outlier_rate_session_duration": 0.01,
     "outlier_duration_multiplier": 10,
@@ -316,9 +316,9 @@ SIM_CONFIG = {
             "cities": [
                 "bukidnon",
                 "camiguin",
-                "lanao del norte",
-                "misamis occidental",
-                "misamis oriental",
+                "lanao_del_norte",
+                "misamis_occidental",
+                "misamis_oriental",
             ],
             "city_weights": [0.25, 0.03, 0.20, 0.12, 0.40],
         },

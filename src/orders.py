@@ -8,7 +8,7 @@ def generate_orders(
     df_events: pd.DataFrame, df_sessions: pd.DataFrame, rng: np.random.Generator
 ):
     # only get purchase
-    purchase = df_events[df_events["event_type"] == "purchase"].copy()
+    purchase = df_events[df_events["event_name"] == "purchase"].copy()
     print(f"Generating {len(purchase)} orders for purchases events")
 
     purchase = purchase.merge(
@@ -23,10 +23,10 @@ def generate_orders(
 
     order_timestamp = purchase["event_timestamp"].tolist()
 
-    payment_method = rng.choice(
-        SIM_CONFIG["payment_methods"],
+    payment_type = rng.choice(
+        SIM_CONFIG["payment_type"],
         size=len(purchase),
-        p=SIM_CONFIG["payment_method_weights"],
+        p=SIM_CONFIG["payment_type_weights"],
     )
 
     df_orders = pd.DataFrame(
@@ -35,7 +35,7 @@ def generate_orders(
             "session_id": session_id_fk,
             "user_id": user_id_fk,
             "order_timestamp": order_timestamp,
-            "payment_method": payment_method,
+            "payment_type": payment_type,
         }
     )
     print("orders table generated!")
