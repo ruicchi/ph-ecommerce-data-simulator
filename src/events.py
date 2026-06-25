@@ -238,8 +238,8 @@ def _events_worker(chunk_df, rng_or_seed, config):
     trust_mean = config["trust_mean"]
     trans = config["trans"]
 
-    is_android_arr = chunk_df["device_os_version"].str.contains("Android").to_numpy()
-    is_mobile_arr = (chunk_df["device_group"] == "Mobile").to_numpy()
+    is_android_arr = (chunk_df["device_operating_system"] == "android").to_numpy()
+    is_mobile_arr = (chunk_df["device_group"] == "mobile").to_numpy()
     literacy_arr = chunk_df["latent_digital_literacy"].to_numpy(dtype=np.float64)
     trust_arr = chunk_df["latent_trust_in_platform"].to_numpy(dtype=np.float64)
     session_id_arr = chunk_df["session_id"].to_numpy()

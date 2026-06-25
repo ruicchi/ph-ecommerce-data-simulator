@@ -174,7 +174,8 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             p=SIM_CONFIG["os_by_income"][tier],
         )
 
-    device_os_version = []
+    device_operating_system = []
+    device_operating_system_version = []
     device_group = []
     for os_type in base_os:
         if os_type == "android":
@@ -182,7 +183,8 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                 SIM_CONFIG["android_software_version"],
                 p=SIM_CONFIG["android_software_version_weights"],
             )
-            device_os_version.append(f"{os_type}_{version}")
+            device_operating_system.append(os_type)
+            device_operating_system_version.append(str(version))
             device_group.append("mobile")
 
         elif os_type == "ios":
@@ -190,14 +192,16 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                 SIM_CONFIG["ios_software_version"],
                 p=SIM_CONFIG["ios_software_version_weights"],
             )
-            device_os_version.append(f"{os_type}_{version}")
+            device_operating_system.append(os_type)
+            device_operating_system_version.append(str(version))
             device_group.append("mobile")
         elif os_type == "windows":
             version = rng.choice(
                 SIM_CONFIG["windows_software_version"],
                 p=SIM_CONFIG["windows_software_version_weights"],
             )
-            device_os_version.append(f"{os_type}_{version}")
+            device_operating_system.append(os_type)
+            device_operating_system_version.append(str(version))
             device_group.append("desktop")
 
         elif os_type == "macos":
@@ -205,7 +209,8 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                 SIM_CONFIG["macos_software_version"],
                 p=SIM_CONFIG["macos_software_version_weights"],
             )
-            device_os_version.append(f"{os_type}_{version}")
+            device_operating_system.append(os_type)
+            device_operating_system_version.append(str(version))
             device_group.append("desktop")
 
     session_end_time = []
@@ -225,7 +230,8 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             "session_start_time": session_start_time,
             "session_end_time": session_end_time,
             "session_duration_seconds": session_duration_seconds,
-            "device_os_version": device_os_version,
+            "device_operating_system": device_operating_system,
+            "device_operating_system_version": device_operating_system_version,
             "device_group": device_group,
         }
     )
