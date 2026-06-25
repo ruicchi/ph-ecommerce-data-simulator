@@ -197,6 +197,11 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             device_os_version.append(f"{os_type} {version}")
             device_group.append("Desktop")
 
+    session_end_time = []
+    for start, duration in zip(session_start_time, session_duration_seconds):
+        end_time = start + timedelta(seconds=int(duration))
+        session_end_time.append(end_time)
+
     df_sessions = pd.DataFrame(
         {
             "session_id": session_id,
@@ -204,6 +209,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             "session_number": session_number,
             "acq_channel": acq_channel,
             "session_start_time": session_start_time,
+            "session_end_time": session_end_time,
             "session_date": session_date,
             "is_weekend": is_weekend,
             "session_duration_seconds": session_duration_seconds,
