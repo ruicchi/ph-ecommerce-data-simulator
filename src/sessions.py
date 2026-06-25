@@ -110,16 +110,6 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                 day=min(nearest_payday, 28)
             )
 
-    # date extraction
-    session_date = []
-    is_weekend = []
-    for start_time in session_start_time:
-        date_only = start_time.date()
-        session_date.append(date_only)
-        weekday_num = start_time.weekday()
-        is_weekend_value = weekday_num >= 5  # 5 is saturday, 6 is sunday
-        is_weekend.append(is_weekend_value)
-
     # session duration | NOTE: exponential decay is based on digital_literacy
     latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
     base_duration = rng.exponential(
@@ -210,8 +200,6 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             "acq_channel": acq_channel,
             "session_start_time": session_start_time,
             "session_end_time": session_end_time,
-            "session_date": session_date,
-            "is_weekend": is_weekend,
             "session_duration_seconds": session_duration_seconds,
             "device_os_version": device_os_version,
             "device_group": device_group,
