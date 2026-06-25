@@ -21,10 +21,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
         drop=True
     )
 
-    # session primary keys
     session_id = fastuuid.uuid7_as_strings_bulk(total_sessions)
-
-    # parent foreign keys
     user_id_fk = exploded_users["user_id"].tolist()
 
     user_counter = {}
@@ -199,7 +196,6 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             device_os_version.append(f"{os_type} {version}")
             device_group.append("Desktop")
 
-    # turn into dataframe (pandas)
     df_sessions = pd.DataFrame(
         {
             "session_id": session_id,

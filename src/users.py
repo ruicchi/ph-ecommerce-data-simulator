@@ -8,10 +8,8 @@ from config import SIM_CONFIG
 def generate_users(total_users: int, rng: np.random.Generator):
     print(f"Generating {total_users} users")
 
-    # user primary keys
     user_id = fastuuid.uuid7_as_strings_bulk(total_users)
 
-    # account created timestamps
     base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
     days_ago_array = rng.integers(0, 365, size=total_users)
     seconds_ago_array = rng.integers(0, 86400, size=total_users)
@@ -21,7 +19,6 @@ def generate_users(total_users: int, rng: np.random.Generator):
         past_date = base_date - timedelta(days=int(days), seconds=int(seconds))
         created_at.append(past_date)
 
-    # engine for latent variables (numpy) | creates a gaussian distribution
     latent_income_score = rng.lognormal(mean=0, sigma=1.0, size=total_users)
     latent_digital_literacy = rng.uniform(low=0, high=1.0, size=total_users)
     latent_trust_in_platform = rng.beta(a=2, b=5, size=total_users)
@@ -43,7 +40,6 @@ def generate_users(total_users: int, rng: np.random.Generator):
         chosen_city = rng.choice(region_info["cities"], p=region_info["city_weights"])
         city.append(chosen_city)
 
-    # turn into dataframe (pandas)
     df_users = pd.DataFrame(
         {
             "user_id": user_id,
@@ -57,5 +53,5 @@ def generate_users(total_users: int, rng: np.random.Generator):
         }
     )
 
-    print("users tables generated!")
+    print("users table generated!")
     return df_users

@@ -68,7 +68,6 @@ def generate_order_items(
         final_item_price[outlier_mask] * SIM_CONFIG["outlier_price_multiplier"]
     ).round(2)
 
-    # turn into dataframe (pandas)
     df_order_items = pd.DataFrame(
         {
             "order_item_id": item_id_list,

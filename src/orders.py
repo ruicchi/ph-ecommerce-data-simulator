@@ -29,7 +29,6 @@ def generate_orders(
         p=SIM_CONFIG["payment_method_weights"],
     )
 
-    # turn into dataframe (pandas)
     df_orders = pd.DataFrame(
         {
             "order_id": order_id,
@@ -39,4 +38,5 @@ def generate_orders(
             "payment_method": payment_method,
         }
     )
+    print("orders table generated!")
     return df_orders
