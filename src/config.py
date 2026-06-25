@@ -74,6 +74,7 @@ SIM_CONFIG = {
     "windows_software_version": ["11", "10"],
     "windows_software_version_weights": [0.7, 0.3],
     "macos_software_version": ["sonoma", "ventura", "monterey"],
+    "macos_software_version_weights": [0.3, 0.4, 0.3],
     "digital_literacy_reduction": 150,
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",

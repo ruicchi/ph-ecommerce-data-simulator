@@ -65,10 +65,10 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     literacy_tier[literacy >= thresholds[1]] = "high"
 
     literacy_tier_names = list(SIM_CONFIG["channel_weights_by_literacy"].keys())
-    acq_channel = np.empty(total_sessions, dtype=object)
+    channel_group = np.empty(total_sessions, dtype=object)
     for tier in literacy_tier_names:
         mask = literacy_tier == tier
-        acq_channel[mask] = rng.choice(
+        channel_group[mask] = rng.choice(
             SIM_CONFIG["channels"],
             size=mask.sum(),
             p=SIM_CONFIG["channel_weights_by_literacy"][tier],
@@ -81,7 +81,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     if "utm_mappings" in SIM_CONFIG:
         utm_maps = SIM_CONFIG["utm_mappings"]
         for channel, config in utm_maps.items():
-            mask = acq_channel == channel
+            mask = channel_group == channel
             n_samples = mask.sum()
             if n_samples > 0:
                 utm_source[mask] = rng.choice(
@@ -177,35 +177,36 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     device_os_version = []
     device_group = []
     for os_type in base_os:
-        if os_type == "Android":
+        if os_type == "android":
             version = rng.choice(
                 SIM_CONFIG["android_software_version"],
                 p=SIM_CONFIG["android_software_version_weights"],
             )
             device_os_version.append(f"{os_type} {version}")
-            device_group.append("Mobile")
+            device_group.append("mobile")
 
-        elif os_type == "iOS":
+        elif os_type == "ios":
             version = rng.choice(
                 SIM_CONFIG["ios_software_version"],
                 p=SIM_CONFIG["ios_software_version_weights"],
             )
             device_os_version.append(f"{os_type} {version}")
-            device_group.append("Mobile")
-        elif os_type == "Windows":
+            device_group.append("mobile")
+        elif os_type == "windows":
             version = rng.choice(
                 SIM_CONFIG["windows_software_version"],
                 p=SIM_CONFIG["windows_software_version_weights"],
             )
             device_os_version.append(f"{os_type} {version}")
-            device_group.append("Desktop")
+            device_group.append("desktop")
 
-        else:
+        elif os_type == "macos":
             version = rng.choice(
                 SIM_CONFIG["macos_software_version"],
+                p=SIM_CONFIG["macos_software_version_weights"],
             )
             device_os_version.append(f"{os_type} {version}")
-            device_group.append("Desktop")
+            device_group.append("desktop")
 
     session_end_time = []
     for start, duration in zip(session_start_time, session_duration_seconds):
@@ -217,7 +218,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             "session_id": session_id,
             "user_id": user_id_fk,
             "session_number": session_number,
-            "acq_channel": acq_channel,
+            "acq_channel": channel_group,
             "utm_source": utm_source,
             "utm_medium": utm_medium,
             "utm_campaign": utm_campaign,
