@@ -74,6 +74,26 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             p=SIM_CONFIG["channel_weights_by_literacy"][tier],
         )
 
+    utm_source = np.full(total_sessions, None, dtype=object)
+    utm_medium = np.full(total_sessions, None, dtype=object)
+    utm_campaign = np.full(total_sessions, None, dtype=object)
+
+    if "utm_mappings" in SIM_CONFIG:
+        utm_maps = SIM_CONFIG["utm_mappings"]
+        for channel, config in utm_maps.items():
+            mask = acq_channel == channel
+            n_samples = mask.sum()
+            if n_samples > 0:
+                utm_source[mask] = rng.choice(
+                    config["source"], size=n_samples, p=config["source_weights"]
+                )
+                utm_medium[mask] = rng.choice(
+                    config["medium"], size=n_samples, p=config["medium_weights"]
+                )
+                utm_campaign[mask] = rng.choice(
+                    config["campaign"], size=n_samples, p=config["campaign_weights"]
+                )
+
     session_start_time = []
     for created_date, days, seconds in zip(
         parent_created_at, random_days_array, random_seconds_array
@@ -198,6 +218,9 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             "user_id": user_id_fk,
             "session_number": session_number,
             "acq_channel": acq_channel,
+            "utm_source": utm_source,
+            "utm_medium": utm_medium,
+            "utm_campaign": utm_campaign,
             "session_start_time": session_start_time,
             "session_end_time": session_end_time,
             "session_duration_seconds": session_duration_seconds,
