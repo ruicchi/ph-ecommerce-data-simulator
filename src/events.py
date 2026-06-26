@@ -334,14 +334,6 @@ def _events_worker(chunk_df, rng_or_seed, config):
 
             current_time += int(rng.exponential(scale=avg_wait)) * 1_000_000_000
 
-        if current_state not in (_DROP_OFF, _PURCHASE):
-            event_id.append(str(fastuuid.uuid4()))
-            session_id_fk.append(session_id_arr[i])
-            event_timestamp_ns.append(time_limit)
-            event_name_int.append(_DROP_OFF)
-            error_message.append("ERR_SESSION_TIMEOUT")
-            viewed_category.append(current_category)
-
     df_events = pd.DataFrame(
         {
             "event_id": event_id,
@@ -354,7 +346,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             "android_error": error_message,
         }
     )
-    return df_events[df_events["event_name"] != "drop_off"].reset_index(drop=True)
+    return df_events
 
 
 def generate_events(df_sessions, df_users, rng, n_workers=1):
