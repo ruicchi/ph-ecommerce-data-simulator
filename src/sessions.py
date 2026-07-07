@@ -53,9 +53,30 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
 
     random_days_array = np.minimum(raw_days, lifespan_days).astype(int)
 
-    peak_hours = rng.choice(SIM_CONFIG["peak_hours"], size=total_sessions)
-    normal_dist_hours = rng.normal(loc=peak_hours, scale=1.0)
-    random_seconds_array = ((normal_dist_hours % 24) * 3600).astype(int)
+    behavior_types = SIM_CONFIG["diurnal_behavior_types"]
+    behavior_weights = SIM_CONFIG["diurnal_behavior_weights"]
+
+    assigned_behavior = rng.choice(
+        behavior_types, size=total_sessions, p=behavior_weights
+    )
+    random_seconds_array = np.zeros(total_sessions)
+
+    baseline_mask = assigned_behavior == "baseline"
+    random_seconds_array[baseline_mask] = (
+        rng.uniform(0, 24, size=baseline_mask.sum()) * 3600
+    )
+
+    lunch_mask = assigned_behavior == "lunch_rush"
+    random_seconds_array[lunch_mask] = (
+        rng.normal(loc=12.5, scale=1.2, size=lunch_mask.sum()) * 3600
+    )
+
+    evening_mask = assigned_behavior == "evening_rush"
+    random_seconds_array[evening_mask] = (
+        rng.normal(loc=20.5, scale=2.5, size=evening_mask.sum()) * 3600
+    )
+
+    random_seconds_array = (random_seconds_array % (24 * 3600)).astype(int)
 
     # assigns acquisition channel, NOTE: based on digital_literacy
     literacy = exploded_users["latent_digital_literacy"].to_numpy()
@@ -98,7 +119,8 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     for created_date, days, seconds in zip(
         parent_created_at, random_days_array, random_seconds_array
     ):
-        start_date = created_date + timedelta(days=int(days), seconds=int(seconds))
+        base_midnight = created_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = base_midnight + timedelta(days=int(days), seconds=int(seconds))
         session_start_time.append(start_date)
 
     # payday shift
