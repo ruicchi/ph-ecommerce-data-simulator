@@ -1,12 +1,12 @@
-# Synthetic Clickstream & E-Commerce Simulator (In Souteast Asian and PH Market)
+# Synthetic Clickstream & E-Commerce Simulator (PH Market)
 
 ## Overview
 
 This repository was built as a portfolio project for **Eskwelabs Innovation Fellowship** Internship Program. As an EIF, the goal of this project is "to help learners practice with datasets that feel close to real business, social impact, education, workforce, or operations problems without using sensitive or confidential real-world data."
 
-We are asked to create a mathematical model, develop a dataset generator, use the generator to generate a dataset, carry out a sample EDA of the dataset, and create a challenge statement that can allow learners to practice with the dataset.
+We are asked to create a mathematical model, develop a dataset generator, use the generator to generate a dataset, carry out a sample EDA of the dataset, and create a challenge statement that can allow learners to practice with the dataset. It is tailored specifically for a funnel optimization analyst.
 
-This project contains a synthetic data pipeline built in Python (`numpy`, `pandas`). It is explicitly designed to model the behavioral economics of Tier-1 Southeast Asian digital retail platforms (e.g., Shopee, Lazada, TikTok Shop).
+This project contains a synthetic data pipeline built in Python (`numpy`, `pandas`). It is explicitly designed to model the behavioral economics of Tier-1 Philippine E-commerce platforms (e.g., Shopee, Lazada, TikTok Shop).
 
 ### Core Mathematical Engine
 
