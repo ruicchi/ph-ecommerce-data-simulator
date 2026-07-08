@@ -10,14 +10,16 @@ def generate_users(total_users: int, rng: np.random.Generator):
 
     user_id = fastuuid.uuid4_as_strings_bulk(total_users)
 
-    base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
-    days_ago_array = rng.integers(0, 365, size=total_users)
+    base_date = pd.to_datetime(SIM_CONFIG["as_of_date"])
+    raw_tenure = rng.lognormal(mean=5.19, sigma=1.2, size=total_users)
+    user_tenure_days = np.clip(np.floor(raw_tenure), 1, 2000).astype(int)
     seconds_ago_array = rng.integers(0, 86400, size=total_users)
 
-    user_first_touch_timestamp = []
-    for days, seconds in zip(days_ago_array, seconds_ago_array):
-        past_date = base_date - timedelta(days=int(days), seconds=int(seconds))
-        user_first_touch_timestamp.append(past_date)
+    user_first_touch_timestamp = (
+        base_date
+        - pd.to_timedelta(user_tenure_days, unit="D")
+        - pd.to_timedelta(seconds_ago_array, unit="s")
+    )
 
     latent_income_score = rng.lognormal(mean=0, sigma=1.0, size=total_users)
     latent_digital_literacy = rng.uniform(low=0, high=1.0, size=total_users)
@@ -30,9 +32,6 @@ def generate_users(total_users: int, rng: np.random.Generator):
         weight = SIM_CONFIG["regions"][region_name]["weight"]
         region_weights.append(weight)
     region = rng.choice(region_names, size=total_users, p=region_weights)
-
-    # number of days a user has been active since first visit or purchase
-    user_tenure_days = days_ago_array
 
     city = []
     for chosen_region in region:
