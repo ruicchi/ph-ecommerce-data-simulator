@@ -30,11 +30,31 @@ def generate_order_items(
 
     item_order_fk = exploded_orders["order_id"].tolist()
 
-    item_quantity = rng.choice(
+    n_items = int(total_items)
+
+    is_discounted = rng.random(size=total_items) < SIM_CONFIG["promo_code_probability"]
+    num_tiers = len(SIM_CONFIG["promo_discount_tiers"])
+
+    tier_indices = rng.choice(
+        num_tiers,
+        size=n_items,
+        p=SIM_CONFIG["promo_discount_weights"],
+    )
+
+    percentages = np.array(SIM_CONFIG["promo_discount_tiers"])[tier_indices]
+    caps = np.array(SIM_CONFIG["promo_discount_caps"])[tier_indices]
+
+    actual_discount_pct = np.where(is_discounted, percentages, 0.0)
+    actual_discount_cap = np.where(is_discounted, caps, 0.0)
+
+    base_quantity = rng.choice(
         SIM_CONFIG["item_quantity_counts"],
         size=total_items,
         p=SIM_CONFIG["item_quantity_weights"],
     )
+
+    promo_volume_uplift = rng.poisson(lam=(actual_discount_pct * 2.5))
+    item_quantity = base_quantity + promo_volume_uplift
 
     item_category = rng.choice(
         SIM_CONFIG["item_categories"],
@@ -44,19 +64,16 @@ def generate_order_items(
     base_prices = (
         pd.Series(item_category).map(SIM_CONFIG["category_base_prices"]).to_numpy()
     )
-    is_discounted = rng.random(size=total_items) < SIM_CONFIG["promo_code_probability"]
-    discount_tiers = rng.choice(
-        SIM_CONFIG["promo_discount_tiers"],
-        size=total_items,
-        p=SIM_CONFIG["promo_discount_weights"],
-    )
-    actual_discount = np.where(is_discounted, discount_tiers, 0.0)
-
     income_scores = exploded_orders["latent_income_score"].to_numpy()
     noise = rng.normal(0, 10, size=total_items)
+
     raw_prices = base_prices + (income_scores * 20) + noise
     base_item_price = np.floor(np.maximum(9.99, raw_prices)) + 0.99
-    discounted_prices = base_item_price * (1.0 - actual_discount)
+
+    raw_discounted_price = base_item_price * actual_discount_pct
+    final_discounted_price = np.minimum(raw_discounted_price, actual_discount_cap)
+
+    discounted_prices = base_item_price * (1.0 - actual_discount_pct)
     final_item_price = np.maximum(4.99, discounted_prices).round(2)
 
     outlier_mask = rng.random(size=total_items) < SIM_CONFIG["outlier_rate_item_price"]
@@ -72,7 +89,8 @@ def generate_order_items(
             "base_item_price": base_item_price,
             "final_item_price": final_item_price,
             "quantity": item_quantity,
-            "discount_percentage": actual_discount,
+            "promo_tier_percentage": actual_discount_pct,
+            "discount_amount": final_discounted_price,
         }
     )
 
