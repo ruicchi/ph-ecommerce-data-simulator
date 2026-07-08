@@ -70,16 +70,16 @@ def generate_order_items(
     raw_prices = base_prices + (income_scores * 20) + noise
     base_item_price = np.floor(np.maximum(9.99, raw_prices)) + 0.99
 
-    raw_discounted_price = base_item_price * actual_discount_pct
-    final_discounted_price = np.minimum(raw_discounted_price, actual_discount_cap)
-
-    discounted_prices = base_item_price * (1.0 - actual_discount_pct)
-    final_item_price = np.maximum(4.99, discounted_prices).round(2)
-
     outlier_mask = rng.random(size=total_items) < SIM_CONFIG["outlier_rate_item_price"]
-    final_item_price[outlier_mask] = (
-        final_item_price[outlier_mask] * SIM_CONFIG["outlier_price_multiplier"]
+    base_item_price[outlier_mask] = (
+        base_item_price[outlier_mask] * SIM_CONFIG["outlier_price_multiplier"]
     ).round(2)
+
+    raw_discounted_price = base_item_price * actual_discount_pct
+    discount_amount = np.minimum(raw_discounted_price, actual_discount_cap)
+
+    discounted_prices = base_item_price - discount_amount
+    final_item_price = np.maximum(4.99, discounted_prices).round(2)
 
     df_order_items = pd.DataFrame(
         {
@@ -90,7 +90,7 @@ def generate_order_items(
             "final_item_price": final_item_price,
             "quantity": item_quantity,
             "promo_tier_percentage": actual_discount_pct,
-            "discount_amount": final_discounted_price,
+            "discount_amount": discount_amount,
         }
     )
 
