@@ -7,27 +7,28 @@ from events import generate_events
 from orders import generate_orders
 from order_items import generate_order_items
 
-# TEST: FOR TESTING ONLY
 if __name__ == "__main__":
     master_ss = np.random.SeedSequence(SIM_CONFIG["random_seed"])
     stage_seeds = master_ss.spawn(5)
-    users_rng = np.random.default_rng(stage_seeds[0])
-    sessions_rng = np.random.default_rng(stage_seeds[1])
-    events_rng = np.random.default_rng(stage_seeds[2])
-    orders_rng = np.random.default_rng(stage_seeds[3])
-    order_items_rng = np.random.default_rng(stage_seeds[4])
+    rng_users = np.random.default_rng(stage_seeds[0])
+    rng_sessions = np.random.default_rng(stage_seeds[1])
+    rng_events = np.random.default_rng(stage_seeds[2])
+    rng_orders = np.random.default_rng(stage_seeds[3])
+    rng_order_items = np.random.default_rng(stage_seeds[4])
 
     n_workers = SIM_CONFIG.get("n_workers", 1)
 
-    test_users_df = generate_users(SIM_CONFIG["target_users"], users_rng)
-    # test_users_df = generate_users(20, users_rng)
-    test_sessions_df = generate_sessions(test_users_df, sessions_rng)
+    # TEST: FOR TESTING ONLY
+
+    # test_users_df = generate_users(SIM_CONFIG["target_users"], rng_users)
+    test_users_df = generate_users(20, rng_users)
+    test_sessions_df = generate_sessions(test_users_df, rng_sessions)
     test_events_df = generate_events(
-        test_sessions_df, test_users_df, events_rng, n_workers
+        test_sessions_df, test_users_df, rng_events, n_workers
     )
-    test_orders_df = generate_orders(test_events_df, test_sessions_df, orders_rng)
+    test_orders_df = generate_orders(test_events_df, test_sessions_df, rng_orders)
     test_order_items_df = generate_order_items(
-        test_orders_df, test_users_df, order_items_rng
+        test_orders_df, test_users_df, rng_order_items
     )
 
     print("\nTEST: GENERATED USERS")
@@ -60,9 +61,10 @@ if __name__ == "__main__":
     print("\nTEST: DATA TYPES (ORDER ITEMS)")
     print(test_order_items_df.dtypes)
 
-    print("\nEXPORTING TO CSV")
+    # TEST: EXPORT TO test_data
+    print("\nTEST: EXPORTING TO CSV")
 
-    os.makedirs("data", exist_ok=True)
+    os.makedirs("test_data", exist_ok=True)
 
     clean_users_df = test_users_df.drop(
         columns=[
@@ -79,10 +81,10 @@ if __name__ == "__main__":
         by="order_timestamp"
     ).reset_index(drop=True)
 
-    clean_users_df.to_csv("data/users.csv", index=False)
-    test_sessions_df.to_csv("data/sessions.csv", index=False)
-    sorted_test_events_df.to_csv("data/events.csv", index=False)
-    sorted_test_orders_df.to_csv("data/orders.csv", index=False)
-    test_order_items_df.to_csv("data/order_items.csv", index=False)
+    clean_users_df.to_csv("test_data/users.csv", index=False)
+    test_sessions_df.to_csv("test_data/sessions.csv", index=False)
+    sorted_test_events_df.to_csv("test_data/events.csv", index=False)
+    sorted_test_orders_df.to_csv("test_data/orders.csv", index=False)
+    test_order_items_df.to_csv("test_data/order_items.csv", index=False)
 
-    print("export completed in data folder")
+    print("export completed in test_data folder")
