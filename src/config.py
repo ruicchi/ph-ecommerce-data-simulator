@@ -7,10 +7,11 @@ SIM_CONFIG = {
     "android_share": 0.65,
     "ios_share": 0.35,
     "channels": ["organic", "meta", "tiktok", "direct"],
+    "channel_weights": [0.15, 0.45, 0.25, 0.15],
     "utm_mappings": {
         "organic": {
             "source": ["google", "bing", "yahoo", "duckduckgo"],
-            "source_weights": [0.80, 0.10, 0.05, 0.05],
+            "source_weights": [0.95, 0.03, 0.01, 0.01],
             "medium": ["organic"],
             "medium_weights": [1.0],
             "campaign": ["(not_set)"],
@@ -18,9 +19,9 @@ SIM_CONFIG = {
         },
         "meta": {
             "source": ["facebook", "ig", "messenger"],
-            "source_weights": [0.65, 0.30, 0.05],
+            "source_weights": [0.75, 0.15, 0.10],
             "medium": ["social", "cpc"],
-            "medium_weights": [0.70, 0.30],
+            "medium_weights": [0.30, 0.70],
             "campaign": [
                 "spring_sale",
                 "retargeting",
@@ -32,7 +33,7 @@ SIM_CONFIG = {
         "tiktok": {
             "source": ["tiktok"],
             "source_weights": [1.0],
-            "medium": ["social", "cpc", "influencer"],
+            "medium": ["affiliate", "live", "cpc"],
             "medium_weights": [0.50, 0.30, 0.20],
             "campaign": [
                 "summer_vibes",
@@ -51,7 +52,6 @@ SIM_CONFIG = {
             "campaign_weights": [1.0],
         },
     },
-    "channel_weights": [0.40, 0.30, 0.20, 0.10],
     "session_count": [1, 2, 3, 4, 5, 8, 15],
     "session_count_weights": [0.65, 0.15, 0.08, 0.05, 0.04, 0.02, 0.01],
     "burst_session_weights": [0.70, 0.30],
@@ -148,6 +148,7 @@ SIM_CONFIG = {
     "promo_code_probability": 0.25,
     "promo_discount_tiers": [0.10, 0.15, 0.20, 0.50],
     "promo_discount_weights": [0.50, 0.30, 0.15, 0.05],
+    "promo_discount_caps": [50.0, 100.0, 150.0, 250.0],
     "payment_type": [
         "digital_wallet",
         "credit_card",
@@ -157,7 +158,7 @@ SIM_CONFIG = {
         "cash_payments",
         "buy_now_pay_later",
     ],
-    "payment_type_weights": [0.34, 0.20, 0.16, 0.13, 0.11, 0.03, 0.03],
+    "payment_type_weights": [0.35, 0.21, 0.16, 0.13, 0.11, 0.03, 0.01],
     "dup_rate_events": 0.005,
     "outlier_rate_session_duration": 0.01,
     "outlier_duration_multiplier": 10,
