@@ -1,7 +1,6 @@
 import fastuuid
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
 from config import SIM_CONFIG
 
 
