@@ -65,14 +65,19 @@ def generate_order_items(
         pd.Series(item_category).map(SIM_CONFIG["category_base_prices"]).to_numpy()
     )
     income_scores = exploded_orders["latent_income_score"].to_numpy()
-    noise = rng.normal(0, 10, size=total_items)
 
-    raw_prices = base_prices + (income_scores * 20) + noise
+    # TODO: review the implementation for generating prices, base item price should correspond to the item category with corresponding noise
+    mu_base = np.log(base_prices)
+    mu_adjusted = mu_base + (income_scores * 0.10)
+
+    raw_prices = rng.lognormal(mean=mu_adjusted, sigma=0.85, size=total_items)
     base_item_price = np.floor(np.maximum(9.99, raw_prices)) + 0.99
 
     outlier_mask = rng.random(size=total_items) < SIM_CONFIG["outlier_rate_item_price"]
+    outlier_multipliers = rng.uniform(3.0, 8.0, size=outlier_mask.sum())
+
     base_item_price[outlier_mask] = (
-        base_item_price[outlier_mask] * SIM_CONFIG["outlier_price_multiplier"]
+        base_item_price[outlier_mask] * outlier_multipliers
     ).round(2)
 
     raw_discounted_price = base_item_price * actual_discount_pct
