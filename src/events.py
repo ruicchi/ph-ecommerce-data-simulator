@@ -252,22 +252,52 @@ def _events_worker(chunk_df, rng_or_seed, config):
 
     n_sessions = len(chunk_df)
 
-    event_id = []
+    # ==========================================
+    # FAST VECTORIZED PRE-CALCULATION
+    # ==========================================
+    # We pre-calculate all the personalized probabilities for _VIEW_ITEM
+    # and _BEGIN_CHECKOUT for the entire chunk at once, avoiding millions of np.clip calls.
+
+    vi_states, vi_base = trans[_VIEW_ITEM]
+    vi_probs_matrix = np.tile(vi_base, (n_sessions, 1))
+    vi_probs_matrix[:, 0] += literacy_effect * literacy_arr
+    vi_probs_matrix[:, 4] -= literacy_effect * literacy_arr
+    vi_probs_matrix[is_mobile_arr, 0] += mobile_penalty
+    vi_probs_matrix[is_mobile_arr, 4] -= mobile_penalty
+    vi_probs_matrix = np.clip(vi_probs_matrix, 0.001, 0.999)
+    vi_probs_matrix /= vi_probs_matrix.sum(axis=1, keepdims=True)
+
+    bc_states, bc_base = trans[_BEGIN_CHECKOUT]
+    bc_probs_matrix = np.tile(bc_base, (n_sessions, 1))
+    adj = trust_effect * (trust_arr - trust_mean)
+    bc_probs_matrix[:, 0] += adj
+    bc_probs_matrix[:, 2] -= adj
+    bc_probs_matrix = np.clip(bc_probs_matrix, 0.001, 0.999)
+    bc_probs_matrix /= bc_probs_matrix.sum(axis=1, keepdims=True)
+
+    # ==========================================
+    # MEMORY ALLOCATION
+    # ==========================================
+    # We remove event_id from the loop entirely.
     session_id_fk = []
     event_timestamp_ns = []
     event_name_int = []
     error_message = []
     viewed_category = []
 
+    # ==========================================
+    # FAST EVENT GENERATION LOOP
+    # ==========================================
     for i in range(n_sessions):
         current_state = _VIEW_ITEM
         current_time = start_time_ns[i]
         time_limit = start_time_ns[i] + duration_ns[i]
         is_android = is_android_arr[i]
-        is_mobile = is_mobile_arr[i]
-        literacy = literacy_arr[i]
-        trust = trust_arr[i]
         current_category = None
+
+        # Pre-slice matrices for this specific user to avoid repeated lookups
+        user_vi_probs = vi_probs_matrix[i]
+        user_bc_probs = bc_probs_matrix[i]
 
         while current_state != _DROP_OFF and current_time < time_limit:
             error = None
@@ -285,15 +315,14 @@ def _events_worker(chunk_df, rng_or_seed, config):
             ):
                 error = android_error_string
 
-            event_id.append(str(fastuuid.uuid4()))
             session_id_fk.append(session_id_arr[i])
             event_timestamp_ns.append(current_time)
             event_name_int.append(current_state)
             error_message.append(error)
             viewed_category.append(current_category)
 
+            # Duplication Glitch logic
             if rng.random() < dup_rate:
-                event_id.append(str(fastuuid.uuid4()))
                 session_id_fk.append(session_id_arr[i])
                 event_timestamp_ns.append(current_time)
                 event_name_int.append(current_state)
@@ -307,23 +336,17 @@ def _events_worker(chunk_df, rng_or_seed, config):
             if current_state == _DROP_OFF:
                 break
 
-            next_states, base_probs = trans[current_state]
-            probs = base_probs.copy()
-
+            # Extremely fast state transition (No math required inside the loop!)
             if current_state == _VIEW_ITEM:
-                probs[0] += literacy_effect * literacy
-                probs[4] -= literacy_effect * literacy
-                if is_mobile:
-                    probs[0] += mobile_penalty
-                    probs[4] -= mobile_penalty
+                next_states = vi_states
+                probs = user_vi_probs
             elif current_state == _BEGIN_CHECKOUT:
-                adj = trust_effect * (trust - trust_mean)
-                probs[0] += adj
-                probs[2] -= adj
+                next_states = bc_states
+                probs = user_bc_probs
+            else:
+                next_states, probs = trans[current_state]
 
-            np.clip(probs, 0.001, 0.999, out=probs)
-            probs /= probs.sum()
-
+            # Fast cumulative sum choice
             r = rng.random()
             cumulative = 0.0
             for j in range(len(probs)):
@@ -334,18 +357,26 @@ def _events_worker(chunk_df, rng_or_seed, config):
 
             current_time += int(rng.exponential(scale=avg_wait)) * 1_000_000_000
 
+    # ==========================================
+    # FINAL DATAFRAME ASSEMBLY
+    # ==========================================
+    total_generated_events = len(session_id_fk)
+
     df_events = pd.DataFrame(
         {
-            "event_id": event_id,
+            # 1. Bulk generate UUIDs at C-speed instead of in Python loop
+            "event_id": fastuuid.uuid4_as_strings_bulk(total_generated_events),
             "session_id": session_id_fk,
             "event_timestamp": pd.to_datetime(
                 np.array(event_timestamp_ns, dtype=np.int64)
             ),
-            "event_name": [_STATE_NAMES[s] for s in event_name_int],
+            # 2. Fast NumPy mapping instead of list comprehension
+            "event_name": np.array(_STATE_NAMES)[event_name_int],
             "viewed_category": viewed_category,
             "android_error": error_message,
         }
     )
+
     return df_events
 
 
