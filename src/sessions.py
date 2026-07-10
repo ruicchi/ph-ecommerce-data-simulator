@@ -116,41 +116,32 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                     config["campaign"], size=n_samples, p=config["campaign_weights"]
                 )
 
-    base_midnight = pd.to_datetime(parent_created_at).dt.floor("D")
+    base_midnight = pd.to_datetime(parent_created_at).floor("D")
     session_start_time = (
         base_midnight
         + pd.to_timedelta(random_days_array, unit="D")
         + pd.to_timedelta(random_seconds_array, unit="s")
     )
 
-    # payday shift
-    payday_dates = SIM_CONFIG["payday_dates"]
     shift_probability = SIM_CONFIG["shift_probability"]
+    days = session_start_time.day.to_numpy()
 
-    for session_index, session_start in enumerate(session_start_time):
-        day_of_month = session_start.day
-        is_payday = day_of_month in payday_dates
-        if is_payday:
-            continue
+    is_payday = np.isin(days, SIM_CONFIG["payday_dates"])
+    should_shift = rng.random(size=total_sessions) < shift_probability
+    mask_to_shift = ~is_payday & should_shift
 
-        should_shift = rng.random() < shift_probability
-        if not should_shift:
-            continue
+    dist_15 = np.abs(days - 15)
+    dist_30 = np.abs(days - 30)
+    nearest_payday = np.where(dist_15 <= dist_30, 15, 28)
 
-        distance_to_15 = abs(day_of_month - 15)
-        distance_to_30 = abs(day_of_month - 30)
-        if distance_to_15 <= distance_to_30:
-            nearest_payday = 15
-        else:
-            nearest_payday = 30
-        try:
-            session_start_time[session_index] = session_start.replace(
-                day=nearest_payday
-            )
-        except ValueError:
-            session_start_time[session_index] = session_start.replace(
-                day=min(nearest_payday, 28)
-            )
+    days_to_add = nearest_payday - days
+
+    session_start_time = np.where(
+        mask_to_shift,
+        session_start_time + pd.to_timedelta(days_to_add, unit="D"),
+        session_start_time,
+    )
+    session_start_time = pd.to_datetime(session_start_time)
 
     # session duration | NOTE: exponential decay is based on digital_literacy
     latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
