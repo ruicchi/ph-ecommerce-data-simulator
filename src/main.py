@@ -98,11 +98,11 @@ if __name__ == "__main__":
     print("\nTEST: DATA TYPES (ORDER ITEMS)")
     print(df_test_order_items.dtypes)
 
-    export_test_data(
-        df_test_users,
-        df_test_sessions,
-        df_test_events,
-        df_test_orders,
-        df_test_order_items,
-        output_dir="test_data",
-    )
+    # export_test_data(
+    #     df_test_users,
+    #     df_test_sessions,
+    #     df_test_events,
+    #     df_test_orders,
+    #     df_test_order_items,
+    #     output_dir="test_data",
+    # )
