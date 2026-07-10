@@ -6,13 +6,22 @@ from config import SIM_CONFIG
 
 
 def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
-    num_users = len(df_users)
-    sessions_per_user = rng.choice(
-        SIM_CONFIG["session_count"],
-        size=num_users,
-        p=SIM_CONFIG["session_count_weights"],
-    )
-    total_sessions = sessions_per_user.sum()
+    tenure_days = df_users["user_tenure_days"].to_numpy()
+    literacy = df_users["latent_digital_literacy"].to_numpy()
+
+    base_interval = SIM_CONFIG["base_session_interval_days"]
+    base_expected_sessions = tenure_days / base_interval
+
+    max_score = SIM_CONFIG["literacy_max_score"]
+    boost_weight = SIM_CONFIG["literacy_session_boost_weight"]
+
+    literacy_multiplier = 1.0 + (literacy / max_score) * boost_weight
+    final_lambda = base_expected_sessions * literacy_multiplier
+
+    raw_sessions = rng.poisson(lam=final_lambda)
+
+    sessions_per_user = np.maximum(1, raw_sessions)
+    total_sessions = int(sessions_per_user.sum())
 
     print(f"Generating {total_sessions} sessions")
 
@@ -25,20 +34,12 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
 
     user_id_fk = exploded_users["user_id"].tolist()
 
-    user_counter = {}
-    session_number = []
-    for uid in user_id_fk:
-        user_counter[uid] = user_counter.get(uid, 0) + 1
-        session_number.append(user_counter[uid])
+    session_number = exploded_users.groupby("user_id").cumcount() + 1
 
     # session start timestamps (bimodal diurnal peak hours) | NOTE: random days is only limited to 30
     parent_created_at = exploded_users["account_created_at"].tolist()
-    base_date = datetime.strptime(SIM_CONFIG["as_of_date"], "%Y-%m-%d")
 
-    lifespan_days = []
-    for created in parent_created_at:
-        time_delta = base_date - created
-        lifespan_days.append(time_delta.days)
+    lifespan_days = exploded_users["user_tenure_days"].to_numpy()
 
     is_burst_session = rng.choice(
         [True, False], size=total_sessions, p=SIM_CONFIG["burst_session_weights"]
@@ -115,17 +116,16 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
                     config["campaign"], size=n_samples, p=config["campaign_weights"]
                 )
 
-    session_start_time = []
-    for created_date, days, seconds in zip(
-        parent_created_at, random_days_array, random_seconds_array
-    ):
-        base_midnight = created_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        start_date = base_midnight + timedelta(days=int(days), seconds=int(seconds))
-        session_start_time.append(start_date)
+    base_midnight = pd.to_datetime(parent_created_at).dt.floor("D")
+    session_start_time = (
+        base_midnight
+        + pd.to_timedelta(random_days_array, unit="D")
+        + pd.to_timedelta(random_seconds_array, unit="s")
+    )
 
     # payday shift
     payday_dates = SIM_CONFIG["payday_dates"]
-    shift_probability = 0.12
+    shift_probability = SIM_CONFIG["shift_probability"]
 
     for session_index, session_start in enumerate(session_start_time):
         day_of_month = session_start.day
@@ -235,10 +235,9 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
             device_operating_system_version.append(str(version))
             device_group.append("desktop")
 
-    session_end_time = []
-    for start, duration in zip(session_start_time, session_duration_seconds):
-        end_time = start + timedelta(seconds=int(duration))
-        session_end_time.append(end_time)
+    session_end_time = session_start_time + pd.to_timedelta(
+        session_duration_seconds, unit="s"
+    )
 
     df_sessions = pd.DataFrame(
         {
