@@ -66,7 +66,6 @@ def generate_order_items(
     )
     income_scores = exploded_orders["latent_income_score"].to_numpy()
 
-    # TODO: review the implementation for generating prices, base item price should correspond to the item category with corresponding noise
     mu_base = np.log(base_prices)
     mu_adjusted = mu_base + (income_scores * 0.10)
 
