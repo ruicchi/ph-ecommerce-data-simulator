@@ -55,7 +55,7 @@ if __name__ == "__main__":
     rng_orders = np.random.default_rng(stage_seeds[3])
     rng_order_items = np.random.default_rng(stage_seeds[4])
 
-    n_workers = SIM_CONFIG.get("n_workers", 1)
+    n_workers = SIM_CONFIG["n_workers"]
 
     # test_users_df = generate_users(SIM_CONFIG["target_users"], rng_users)
     df_test_users = generate_users(20, rng_users)
