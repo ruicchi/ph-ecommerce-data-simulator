@@ -81,7 +81,7 @@ SIM_CONFIG = {
     "digital_literacy_reduction": 150,
     "android_error_rate": 0.05,
     "android_error_string": "ERR_VERSION_NOT_FOUND",
-    "event_spacing_scale_seconds": 30,
+    "average_wait": 30,
     "base_transactions": {
         # top of funnel
         "search": {"view_item_list": 0.70, "drop_off": 0.30},
