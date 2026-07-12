@@ -169,7 +169,6 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     ).astype(int)
     session_duration_seconds = session_duration_seconds.tolist()
 
-    # device OS versions | NOTE: conditioned on income bracket
     income = exploded_users["latent_income_score"].to_numpy()
     income_thresholds = SIM_CONFIG["income_os_thresholds"]
     income_tier = np.full(total_sessions, "mid", dtype=object)
