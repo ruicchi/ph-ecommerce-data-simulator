@@ -8,7 +8,39 @@ from orders import generate_orders
 from order_items import generate_order_items
 
 
-def export_test_data(
+def _prepare_purchases(df_events, df_sessions, df_users) -> dict:
+    """Orchestration adapter: prepares flat purchase arrays for generate_orders."""
+    purchase = df_events[df_events["event_name"] == "purchase"].copy()
+
+    purchase = purchase.merge(
+        df_sessions[["session_id", "user_id"]], on="session_id", how="left"
+    )
+
+    purchase = purchase.merge(
+        df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
+    )
+
+    return {
+        "session_id": purchase["session_id"].to_numpy(),
+        "user_id": purchase["user_id"].to_numpy(),
+        "event_timestamp": purchase["event_timestamp"].to_numpy(),
+        "latent_income_score": purchase["latent_income_score"].to_numpy(),
+    }
+
+
+def _prepare_order_items(df_orders, df_users) -> dict:
+    """Orchestration adapter: prepares flat arrays for generate_order_items."""
+    working_df = df_orders.merge(
+        df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
+    )
+
+    return {
+        "order_id": working_df["order_id"].to_numpy(),
+        "latent_income_score": working_df["latent_income_score"].to_numpy(),
+    }
+
+
+def _export_test_data(
     df_test_users,
     df_test_sessions,
     df_test_events,
@@ -63,10 +95,12 @@ if __name__ == "__main__":
     df_test_events = generate_events(
         df_test_sessions, df_test_users, rng_events, n_workers
     )
-    df_test_orders = generate_orders(df_test_events, df_test_sessions, rng_orders)
-    df_test_order_items = generate_order_items(
-        df_test_orders, df_test_users, rng_order_items
-    )
+
+    purchase_data = _prepare_purchases(df_test_events, df_test_sessions, df_test_users)
+    df_test_orders = generate_orders(purchase_data, rng_orders)
+
+    order_data = _prepare_order_items(df_test_orders, df_test_users)
+    df_test_order_items = generate_order_items(order_data, rng_order_items)
 
     print("\nTEST: GENERATED USERS")
     print(df_test_users)
@@ -98,7 +132,7 @@ if __name__ == "__main__":
     print("\nTEST: DATA TYPES (ORDER ITEMS)")
     print(df_test_order_items.dtypes)
 
-    # export_test_data(
+    # _export_test_data(
     #     df_test_users,
     #     df_test_sessions,
     #     df_test_events,
