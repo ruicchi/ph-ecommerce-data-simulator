@@ -41,20 +41,21 @@ _STATE_NAMES = [
 ]
 
 
-def _build_events_config():
+def _build_events_config() -> dict:
+    # bt = base_transactions
     bt = SIM_CONFIG["base_transactions"]
     return {
-        "categories": SIM_CONFIG["item_categories"],
-        "cat_cdf": np.cumsum(SIM_CONFIG["item_category_weights"]),
-        "avg_wait": SIM_CONFIG["event_spacing_scale_seconds"],
+        "item_categories": SIM_CONFIG["item_categories"],
+        "category_cdf": np.cumsum(SIM_CONFIG["item_category_weights"]),
+        "average_wait": SIM_CONFIG["average_wait"],
         "android_error_rate": SIM_CONFIG["android_error_rate"],
         "android_error_string": SIM_CONFIG["android_error_string"],
-        "dup_rate": SIM_CONFIG["dup_rate_events"],
+        "dup_rate_events": SIM_CONFIG["dup_rate_events"],
         "literacy_effect": SIM_CONFIG["funnel_view_item_literacy_effect"],
         "mobile_penalty": SIM_CONFIG["funnel_view_item_mobile_penalty"],
         "trust_effect": SIM_CONFIG["funnel_checkout_trust_effect"],
         "trust_mean": SIM_CONFIG["funnel_checkout_trust_mean"],
-        "trans": {
+        "transitions": {
             _SEARCH: (
                 np.array([_VIEW_ITEM_LIST, _DROP_OFF], dtype=np.int8),
                 np.array(
@@ -220,37 +221,47 @@ def _build_events_config():
     }
 
 
-def _events_worker(chunk_df, rng_or_seed, config):
-    if not isinstance(rng_or_seed, np.random.Generator):
-        rng = np.random.default_rng(rng_or_seed)
-    else:
-        rng = rng_or_seed
+def _events_worker(session_data, rng, events_config) -> pd.DataFrame:
+    """
+    Simulates user events for a chunk of sessions using a Markov Chain approach.
 
-    categories = config["categories"]
-    cat_cdf = config["cat_cdf"]
-    avg_wait = config["avg_wait"]
-    android_error_rate = config["android_error_rate"]
-    android_error_string = config["android_error_string"]
-    dup_rate = config["dup_rate"]
-    literacy_effect = config["literacy_effect"]
-    mobile_penalty = config["mobile_penalty"]
-    trust_effect = config["trust_effect"]
-    trust_mean = config["trust_mean"]
-    trans = config["trans"]
+    Key Variables & Abbreviations:
+        - rng: np.random.Generator used for all random choices in this worker.
+        - *_arr: Suffix indicating a 1D NumPy array covering all sessions in the chunk
+        - vi_*: Variables related to the _VIEW_ITEM state.
+            - vi_base: Baseline probabilities for transitions out of _VIEW_ITEM.
+            - vi_probs_matrix: A 2D array where each row holds personalized _VIEW_ITEM
+                               transition probabilities tailored to a specific user's traits.
+        - bc_*: Variables related to the _BEGIN_CHECKOUT state.
+        - ns: Suffix indicating nanoseconds for fast integer time math.
+        - idx: Suffix indicating an integer index used to select from an array.
+        - r: A random float between 0 and 1, used for cumulative sum probability choices.
+    """
+    item_categories = events_config["item_categories"]
+    category_cdf = events_config["category_cdf"]
+    average_wait = events_config["average_wait"]
+    android_error_rate = events_config["android_error_rate"]
+    android_error_string = events_config["android_error_string"]
+    dup_rate_events = events_config["dup_rate_events"]
+    literacy_effect = events_config["literacy_effect"]
+    mobile_penalty = events_config["mobile_penalty"]
+    trust_effect = events_config["trust_effect"]
+    trust_mean = events_config["trust_mean"]
+    transitions = events_config["transitions"]
 
-    is_android_arr = (chunk_df["device_operating_system"] == "android").to_numpy()
-    is_mobile_arr = (chunk_df["device_group"] == "mobile").to_numpy()
-    literacy_arr = chunk_df["latent_digital_literacy"].to_numpy(dtype=np.float64)
-    trust_arr = chunk_df["latent_trust_in_platform"].to_numpy(dtype=np.float64)
-    session_id_arr = chunk_df["session_id"].to_numpy()
+    is_android_arr = session_data["device_operating_system"] == "android"
+    is_mobile_arr = session_data["device_group"] == "mobile"
+    literacy_arr = session_data["latent_digital_literacy"].astype(np.float64)
+    trust_arr = session_data["latent_trust_in_platform"].astype(np.float64)
+    session_id_arr = session_data["session_id"]
     start_time_ns = (
-        chunk_df["session_start_time"].astype("datetime64[ns]").to_numpy(dtype=np.int64)
+        session_data["session_start_time"].astype("datetime64[ns]").astype(np.int64)
     )
     duration_ns = (
-        chunk_df["session_duration_seconds"].to_numpy(dtype=np.int64) * 1_000_000_000
+        session_data["session_duration_seconds"].astype(np.int64) * 1_000_000_000
     )
 
-    n_sessions = len(chunk_df)
+    n_sessions = len(session_id_arr)
 
     # ==========================================
     # FAST VECTORIZED PRE-CALCULATION
@@ -258,7 +269,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
     # We pre-calculate all the personalized probabilities for _VIEW_ITEM
     # and _BEGIN_CHECKOUT for the entire chunk at once, avoiding millions of np.clip calls.
 
-    vi_states, vi_base = trans[_VIEW_ITEM]
+    vi_states, vi_base = transitions[_VIEW_ITEM]
     vi_probs_matrix = np.tile(vi_base, (n_sessions, 1))
     vi_probs_matrix[:, 0] += literacy_effect * literacy_arr
     vi_probs_matrix[:, 4] -= literacy_effect * literacy_arr
@@ -267,7 +278,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
     vi_probs_matrix = np.clip(vi_probs_matrix, 0.001, 0.999)
     vi_probs_matrix /= vi_probs_matrix.sum(axis=1, keepdims=True)
 
-    bc_states, bc_base = trans[_BEGIN_CHECKOUT]
+    bc_states, bc_base = transitions[_BEGIN_CHECKOUT]
     bc_probs_matrix = np.tile(bc_base, (n_sessions, 1))
     adj = trust_effect * (trust_arr - trust_mean)
     bc_probs_matrix[:, 0] += adj
@@ -303,8 +314,8 @@ def _events_worker(chunk_df, rng_or_seed, config):
             error = None
 
             if current_state == _VIEW_ITEM:
-                idx = np.searchsorted(cat_cdf, rng.random())
-                current_category = categories[idx]
+                idx = np.searchsorted(category_cdf, rng.random())
+                current_category = item_categories[idx]
             elif current_state == _BEGIN_CHECKOUT:
                 current_category = None
 
@@ -322,7 +333,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
             viewed_category.append(current_category)
 
             # Duplication Glitch logic
-            if rng.random() < dup_rate:
+            if rng.random() < dup_rate_events:
                 session_id_fk.append(session_id_arr[i])
                 event_timestamp_ns.append(current_time)
                 event_name_int.append(current_state)
@@ -344,7 +355,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
                 next_states = bc_states
                 probs = user_bc_probs
             else:
-                next_states, probs = trans[current_state]
+                next_states, probs = transitions[current_state]
 
             # Fast cumulative sum choice
             r = rng.random()
@@ -355,7 +366,7 @@ def _events_worker(chunk_df, rng_or_seed, config):
                     current_state = next_states[j]
                     break
 
-            current_time += int(rng.exponential(scale=avg_wait)) * 1_000_000_000
+            current_time += int(rng.exponential(scale=average_wait)) * 1_000_000_000
 
     # ==========================================
     # FINAL DATAFRAME ASSEMBLY
@@ -380,32 +391,39 @@ def _events_worker(chunk_df, rng_or_seed, config):
     return df_events
 
 
-def generate_events(df_sessions, df_users, rng, n_workers=1):
-    print(f"Generating events for {len(df_sessions)} sessions")
+def generate_events(session_data: dict, rng: np.random.Generator, n_workers):
+    num_sessions = len(session_data["session_id"])
+    print(f"Generating events for {num_sessions} sessions")
 
-    working_df = df_sessions.merge(
-        df_users[["user_id", "latent_digital_literacy", "latent_trust_in_platform"]],
-        on="user_id",
-        how="left",
-    )
+    events_config = _build_events_config()
 
-    config = _build_events_config()
-
-    n_workers = max(1, min(n_workers, len(working_df)))
+    n_workers = max(1, min(n_workers, num_sessions))
 
     if n_workers <= 1:
-        return _events_worker(working_df, rng, config)
+        return _events_worker(session_data, rng, events_config)
 
     child_bgs = rng.bit_generator.spawn(n_workers)
 
-    indices = np.array_split(np.arange(len(working_df)), n_workers)
-    chunks = [working_df.iloc[idx].copy() for idx in indices]
+    indices = np.array_split(np.arange(num_sessions), n_workers)
+
+    chunks = []
+    for idx in indices:
+        chunk = {
+            "session_id": session_data["session_id"][idx],
+            "device_operating_system": session_data["device_operating_system"][idx],
+            "device_group": session_data["device_group"][idx],
+            "latent_digital_literacy": session_data["latent_digital_literacy"][idx],
+            "latent_trust_in_platform": session_data["latent_trust_in_platform"][idx],
+            "session_start_time": session_data["session_start_time"][idx],
+            "session_duration_seconds": session_data["session_duration_seconds"][idx],
+        }
+        chunks.append(chunk)
 
     with mp.Pool(n_workers) as pool:
         results = pool.starmap(
             _events_worker,
             [
-                (chunk, np.random.default_rng(bg), config)
+                (chunk, np.random.default_rng(bg), events_config)
                 for chunk, bg in zip(chunks, child_bgs)
             ],
         )
