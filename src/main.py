@@ -10,21 +10,21 @@ from order_items import generate_order_items
 
 def _prepare_purchases(df_events, df_sessions, df_users) -> dict:
     """Orchestration adapter: prepares flat purchase arrays for generate_orders."""
-    purchase = df_events[df_events["event_name"] == "purchase"].copy()
+    working_df = df_events[df_events["event_name"] == "purchase"].copy()
 
-    purchase = purchase.merge(
+    working_df = working_df.merge(
         df_sessions[["session_id", "user_id"]], on="session_id", how="left"
     )
 
-    purchase = purchase.merge(
+    working_df = working_df.merge(
         df_users[["user_id", "latent_income_score"]], on="user_id", how="left"
     )
 
     return {
-        "session_id": purchase["session_id"].to_numpy(),
-        "user_id": purchase["user_id"].to_numpy(),
-        "event_timestamp": purchase["event_timestamp"].to_numpy(),
-        "latent_income_score": purchase["latent_income_score"].to_numpy(),
+        "session_id": working_df["session_id"].to_numpy(),
+        "user_id": working_df["user_id"].to_numpy(),
+        "event_timestamp": working_df["event_timestamp"].to_numpy(),
+        "latent_income_score": working_df["latent_income_score"].to_numpy(),
     }
 
 
@@ -37,6 +37,25 @@ def _prepare_order_items(df_orders, df_users) -> dict:
     return {
         "order_id": working_df["order_id"].to_numpy(),
         "latent_income_score": working_df["latent_income_score"].to_numpy(),
+    }
+
+
+def _prepare_events(df_sessions, df_users) -> dict:
+    """Orchestration adapter: prepares flat arrays for generate_events."""
+    working_df = df_sessions.merge(
+        df_users[["user_id", "latent_digital_literacy", "latent_trust_in_platform"]],
+        on="user_id",
+        how="left",
+    )
+
+    return {
+        "session_id": working_df["session_id"].to_numpy(),
+        "device_operating_system": working_df["device_operating_system"].to_numpy(),
+        "device_group": working_df["device_group"].to_numpy(),
+        "latent_digital_literacy": working_df["latent_digital_literacy"].to_numpy(),
+        "latent_trust_in_platform": working_df["latent_trust_in_platform"].to_numpy(),
+        "session_start_time": working_df["session_start_time"].to_numpy(),
+        "session_duration_seconds": working_df["session_duration_seconds"].to_numpy(),
     }
 
 
@@ -92,9 +111,9 @@ if __name__ == "__main__":
     # test_users_df = generate_users(SIM_CONFIG["target_users"], rng_users)
     df_test_users = generate_users(20, rng_users)
     df_test_sessions = generate_sessions(df_test_users, rng_sessions)
-    df_test_events = generate_events(
-        df_test_sessions, df_test_users, rng_events, n_workers
-    )
+
+    session_data = _prepare_events(df_test_sessions, df_test_users)
+    df_test_events = generate_events(session_data, rng_events, n_workers)
 
     purchase_data = _prepare_purchases(df_test_events, df_test_sessions, df_test_users)
     df_test_orders = generate_orders(purchase_data, rng_orders)
