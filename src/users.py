@@ -4,7 +4,7 @@ import numpy as np
 from config import SIM_CONFIG
 
 
-def generate_users(total_users: int, rng: np.random.Generator):
+def generate_users(total_users: int, rng: np.random.Generator) -> pd.DataFrame:
     print(f"Generating {total_users} users")
 
     user_id = fastuuid.uuid4_as_strings_bulk(total_users)
