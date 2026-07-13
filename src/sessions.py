@@ -26,12 +26,41 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
     user_id_fk = np.repeat(user_data["user_id"], sessions_per_user)
     session_number = pd.Series(user_id_fk).groupby(user_id_fk).cumcount() + 1
 
-    #  NOTE: random days is only limited to 30
-    parent_created_at = np.repeat(
-        user_data["account_created_at"], sessions_per_user
-    ).tolist()
+    # assigns acquisition channel, NOTE: based on digital_literacy
+    literacy = np.repeat(user_data["latent_digital_literacy"], sessions_per_user)
+    thresholds = SIM_CONFIG["literacy_thresholds"]
+    literacy_tier = np.full(total_sessions, "mid", dtype=object)
+    literacy_tier[literacy < thresholds[0]] = "low"
+    literacy_tier[literacy >= thresholds[1]] = "high"
 
-    lifespan_days = np.repeat(user_data["user_tenure_days"], sessions_per_user)
+    literacy_tier_names = list(SIM_CONFIG["channel_weights_by_literacy"].keys())
+    acq_channel = np.empty(total_sessions, dtype=object)
+    for tier in literacy_tier_names:
+        mask = literacy_tier == tier
+        acq_channel[mask] = rng.choice(
+            SIM_CONFIG["channels"],
+            size=mask.sum(),
+            p=SIM_CONFIG["channel_weights_by_literacy"][tier],
+        )
+
+    utm_source = np.full(total_sessions, None, dtype=object)
+    utm_medium = np.full(total_sessions, None, dtype=object)
+    utm_campaign = np.full(total_sessions, None, dtype=object)
+
+    utm_maps = SIM_CONFIG["utm_maps"]
+    for channel, config in utm_maps.items():
+        mask = acq_channel == channel
+        n_samples = mask.sum()
+        if n_samples > 0:
+            utm_source[mask] = rng.choice(
+                config["source"], size=n_samples, p=config["source_weights"]
+            )
+            utm_medium[mask] = rng.choice(
+                config["medium"], size=n_samples, p=config["medium_weights"]
+            )
+            utm_campaign[mask] = rng.choice(
+                config["campaign"], size=n_samples, p=config["campaign_weights"]
+            )
 
     is_burst_session = rng.choice(
         [True, False], size=total_sessions, p=SIM_CONFIG["burst_session_weights"]
@@ -39,19 +68,18 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
     burst_days = rng.exponential(
         scale=SIM_CONFIG["average_dropoff"], size=total_sessions
     )
+    lifespan_days = np.repeat(user_data["user_tenure_days"], sessions_per_user)
     loyalty_days = rng.uniform(low=0, high=lifespan_days, size=total_sessions)
-
     raw_days = np.where(is_burst_session, burst_days, loyalty_days)
 
     random_days_array = np.minimum(raw_days, lifespan_days).astype(int)
-
-    behavior_types = SIM_CONFIG["diurnal_behavior_types"]
-    behavior_weights = SIM_CONFIG["diurnal_behavior_weights"]
+    random_seconds_array = np.zeros(total_sessions)
 
     assigned_behavior = rng.choice(
-        behavior_types, size=total_sessions, p=behavior_weights
+        SIM_CONFIG["diurnal_behavior_types"],
+        size=total_sessions,
+        p=SIM_CONFIG["diurnal_behavior_weights"],
     )
-    random_seconds_array = np.zeros(total_sessions)
 
     baseline_mask = assigned_behavior == "baseline"
     random_seconds_array[baseline_mask] = (
@@ -70,43 +98,8 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
 
     random_seconds_array = (random_seconds_array % (24 * 3600)).astype(int)
 
-    # assigns acquisition channel, NOTE: based on digital_literacy
-    literacy = np.repeat(user_data["latent_digital_literacy"], sessions_per_user)
-    thresholds = SIM_CONFIG["literacy_thresholds"]
-    literacy_tier = np.full(total_sessions, "mid", dtype=object)
-    literacy_tier[literacy < thresholds[0]] = "low"
-    literacy_tier[literacy >= thresholds[1]] = "high"
-
-    literacy_tier_names = list(SIM_CONFIG["channel_weights_by_literacy"].keys())
-    channel_group = np.empty(total_sessions, dtype=object)
-    for tier in literacy_tier_names:
-        mask = literacy_tier == tier
-        channel_group[mask] = rng.choice(
-            SIM_CONFIG["channels"],
-            size=mask.sum(),
-            p=SIM_CONFIG["channel_weights_by_literacy"][tier],
-        )
-
-    utm_source = np.full(total_sessions, None, dtype=object)
-    utm_medium = np.full(total_sessions, None, dtype=object)
-    utm_campaign = np.full(total_sessions, None, dtype=object)
-
-    if "utm_mappings" in SIM_CONFIG:
-        utm_maps = SIM_CONFIG["utm_mappings"]
-        for channel, config in utm_maps.items():
-            mask = channel_group == channel
-            n_samples = mask.sum()
-            if n_samples > 0:
-                utm_source[mask] = rng.choice(
-                    config["source"], size=n_samples, p=config["source_weights"]
-                )
-                utm_medium[mask] = rng.choice(
-                    config["medium"], size=n_samples, p=config["medium_weights"]
-                )
-                utm_campaign[mask] = rng.choice(
-                    config["campaign"], size=n_samples, p=config["campaign_weights"]
-                )
-
+    #  NOTE: random days is only limited to 30
+    parent_created_at = np.repeat(user_data["account_created_at"], sessions_per_user)
     base_midnight = pd.to_datetime(parent_created_at).floor("D")
     session_start_time = (
         base_midnight
@@ -153,6 +146,10 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
         base_duration - literacy_reduction + noise,
     ).astype(int)
 
+    session_end_time = session_start_time + pd.to_timedelta(
+        session_duration_seconds, unit="s"
+    )
+
     # NOTE: generated outliers for duration seconds
     outlier_mask = (
         rng.random(size=total_sessions) < SIM_CONFIG["outlier_rate_session_duration"]
@@ -169,65 +166,39 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
     income_tier[income < income_thresholds[0]] = "low"
     income_tier[income >= income_thresholds[1]] = "high"
 
-    income_tier_names = list(SIM_CONFIG["os_by_income"].keys())
-    base_os = np.empty(total_sessions, dtype=object)
+    income_tier_names = SIM_CONFIG["os_weights_by_income"]
+    device_operating_system = np.empty(total_sessions, dtype=object)
+    device_operating_system_version = np.empty(total_sessions, dtype=object)
+    device_group = np.where(
+        np.isin(device_operating_system, ["android", "ios"]), "mobile", "desktop"
+    )
+
     for tier in income_tier_names:
         mask = income_tier == tier
-        base_os[mask] = rng.choice(
-            SIM_CONFIG["os_distribution"],
+        device_operating_system[mask] = rng.choice(
+            SIM_CONFIG["os_types"],
             size=mask.sum(),
-            p=SIM_CONFIG["os_by_income"][tier],
+            p=SIM_CONFIG["os_weights_by_income"][tier],
         )
 
-    device_operating_system = []
-    device_operating_system_version = []
-    device_group = []
-    for os_type in base_os:
-        if os_type == "android":
-            version = rng.choice(
-                SIM_CONFIG["android_software_version"],
-                p=SIM_CONFIG["android_software_version_weights"],
+    os_types = SIM_CONFIG["os_types"]
+    for os_type in os_types:
+        mask = device_operating_system == os_type
+        n_samples = mask.sum()
+        if n_samples > 0:
+            versions = rng.choice(
+                SIM_CONFIG[f"{os_type}_software_version"],
+                size=n_samples,
+                p=SIM_CONFIG[f"{os_type}_software_version_weights"],
             )
-            device_operating_system.append(os_type)
-            device_operating_system_version.append(str(version))
-            device_group.append("mobile")
-
-        elif os_type == "ios":
-            version = rng.choice(
-                SIM_CONFIG["ios_software_version"],
-                p=SIM_CONFIG["ios_software_version_weights"],
-            )
-            device_operating_system.append(os_type)
-            device_operating_system_version.append(str(version))
-            device_group.append("mobile")
-        elif os_type == "windows":
-            version = rng.choice(
-                SIM_CONFIG["windows_software_version"],
-                p=SIM_CONFIG["windows_software_version_weights"],
-            )
-            device_operating_system.append(os_type)
-            device_operating_system_version.append(str(version))
-            device_group.append("desktop")
-
-        elif os_type == "macos":
-            version = rng.choice(
-                SIM_CONFIG["macos_software_version"],
-                p=SIM_CONFIG["macos_software_version_weights"],
-            )
-            device_operating_system.append(os_type)
-            device_operating_system_version.append(str(version))
-            device_group.append("desktop")
-
-    session_end_time = session_start_time + pd.to_timedelta(
-        session_duration_seconds, unit="s"
-    )
+            device_operating_system_version[mask] = versions.astype(str)
 
     df_sessions = pd.DataFrame(
         {
             "session_id": session_id,
             "user_id": user_id_fk,
             "session_number": session_number,
-            "acq_channel": channel_group,
+            "acq_channel": acq_channel,
             "utm_source": utm_source,
             "utm_medium": utm_medium,
             "utm_campaign": utm_campaign,
