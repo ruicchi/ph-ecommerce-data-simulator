@@ -221,7 +221,9 @@ def _build_events_config() -> dict:
     }
 
 
-def _events_worker(session_data, rng, events_config) -> pd.DataFrame:
+def _events_worker(
+    session_data: dict, rng: np.random.Generator, events_config: dict
+) -> pd.DataFrame:
     """
     Simulates user events for a chunk of sessions using a Markov Chain approach.
 
