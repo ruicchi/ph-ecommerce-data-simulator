@@ -40,6 +40,17 @@ def _prepare_order_items(df_orders, df_users) -> dict:
     }
 
 
+def _prepare_sessions(df_users) -> dict:
+    """Orchestration adapter: prepares flat arrays for generate_sessions."""
+    return {
+        "user_id": df_users["user_id"].to_numpy(),
+        "user_tenure_days": df_users["user_tenure_days"].to_numpy(),
+        "latent_digital_literacy": df_users["latent_digital_literacy"].to_numpy(),
+        "latent_income_score": df_users["latent_income_score"].to_numpy(),
+        "account_created_at": df_users["account_created_at"].to_numpy(),
+    }
+
+
 def _prepare_events(df_sessions, df_users) -> dict:
     """Orchestration adapter: prepares flat arrays for generate_events."""
     working_df = df_sessions.merge(
@@ -110,7 +121,9 @@ if __name__ == "__main__":
 
     # test_users_df = generate_users(SIM_CONFIG["target_users"], rng_users)
     df_test_users = generate_users(20, rng_users)
-    df_test_sessions = generate_sessions(df_test_users, rng_sessions)
+
+    user_data = _prepare_sessions(df_test_users)
+    df_test_sessions = generate_sessions(user_data, rng_sessions)
 
     session_data = _prepare_events(df_test_sessions, df_test_users)
     df_test_events = generate_events(session_data, rng_events, n_workers)
@@ -151,11 +164,11 @@ if __name__ == "__main__":
     print("\nTEST: DATA TYPES (ORDER ITEMS)")
     print(df_test_order_items.dtypes)
 
-    # _export_test_data(
-    #     df_test_users,
-    #     df_test_sessions,
-    #     df_test_events,
-    #     df_test_orders,
-    #     df_test_order_items,
-    #     output_dir="test_data",
-    # )
+    _export_test_data(
+        df_test_users,
+        df_test_sessions,
+        df_test_events,
+        df_test_orders,
+        df_test_order_items,
+        output_dir="test_data",
+    )

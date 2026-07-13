@@ -4,46 +4,38 @@ import numpy as np
 from config import SIM_CONFIG
 
 
-def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
-    tenure_days = df_users["user_tenure_days"].to_numpy()
-    literacy = df_users["latent_digital_literacy"].to_numpy()
-
+def generate_sessions(user_data: dict, rng: np.random.Generator):
+    tenure_days = user_data["user_tenure_days"]
     base_interval = SIM_CONFIG["base_session_interval_days"]
     base_expected_sessions = tenure_days / base_interval
 
+    literacy = user_data["latent_digital_literacy"]
     max_score = SIM_CONFIG["literacy_max_score"]
     boost_weight = SIM_CONFIG["literacy_session_boost_weight"]
 
     literacy_multiplier = 1.0 + (literacy / max_score) * boost_weight
-    final_lambda = base_expected_sessions * literacy_multiplier
+    lambda_arr = base_expected_sessions * literacy_multiplier
 
-    raw_sessions = rng.poisson(lam=final_lambda)
-
+    raw_sessions = rng.poisson(lam=lambda_arr)
     sessions_per_user = np.maximum(1, raw_sessions)
     total_sessions = int(sessions_per_user.sum())
 
     print(f"Generating {total_sessions} sessions")
 
-    # match the sessions to the total of users
-    exploded_users = df_users.loc[df_users.index.repeat(sessions_per_user)].reset_index(
-        drop=True
-    )
-
     session_id = fastuuid.uuid4_as_strings_bulk(total_sessions)
+    user_id_fk = np.repeat(user_data["user_id"], sessions_per_user)
+    session_number = pd.Series(user_id_fk).groupby(user_id_fk).cumcount() + 1
 
-    user_id_fk = exploded_users["user_id"].tolist()
+    #  NOTE: random days is only limited to 30
+    parent_created_at = np.repeat(
+        user_data["account_created_at"], sessions_per_user
+    ).tolist()
 
-    session_number = exploded_users.groupby("user_id").cumcount() + 1
-
-    # session start timestamps (bimodal diurnal peak hours) | NOTE: random days is only limited to 30
-    parent_created_at = exploded_users["account_created_at"].tolist()
-
-    lifespan_days = exploded_users["user_tenure_days"].to_numpy()
+    lifespan_days = np.repeat(user_data["user_tenure_days"], sessions_per_user)
 
     is_burst_session = rng.choice(
         [True, False], size=total_sessions, p=SIM_CONFIG["burst_session_weights"]
     )
-
     burst_days = rng.exponential(
         scale=SIM_CONFIG["average_dropoff"], size=total_sessions
     )
@@ -79,7 +71,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     random_seconds_array = (random_seconds_array % (24 * 3600)).astype(int)
 
     # assigns acquisition channel, NOTE: based on digital_literacy
-    literacy = exploded_users["latent_digital_literacy"].to_numpy()
+    literacy = np.repeat(user_data["latent_digital_literacy"], sessions_per_user)
     thresholds = SIM_CONFIG["literacy_thresholds"]
     literacy_tier = np.full(total_sessions, "mid", dtype=object)
     literacy_tier[literacy < thresholds[0]] = "low"
@@ -143,7 +135,9 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     session_start_time = pd.to_datetime(session_start_time)
 
     # session duration | NOTE: exponential decay is based on digital_literacy
-    latent_digital_literacy = exploded_users["latent_digital_literacy"].to_numpy()
+    latent_digital_literacy = np.repeat(
+        user_data["latent_digital_literacy"], sessions_per_user
+    )
     base_duration = rng.exponential(
         scale=SIM_CONFIG["session_base_max_seconds"], size=total_sessions
     )
@@ -169,7 +163,7 @@ def generate_sessions(df_users: pd.DataFrame, rng: np.random.Generator):
     ).astype(int)
     session_duration_seconds = session_duration_seconds.tolist()
 
-    income = exploded_users["latent_income_score"].to_numpy()
+    income = np.repeat(user_data["latent_income_score"], sessions_per_user)
     income_thresholds = SIM_CONFIG["income_os_thresholds"]
     income_tier = np.full(total_sessions, "mid", dtype=object)
     income_tier[income < income_thresholds[0]] = "low"
