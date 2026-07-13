@@ -4,11 +4,8 @@ SIM_CONFIG = {
     "as_of_date": "2024-12-31",
     "target_users": 1000000,
     "n_workers": 8,
-    "android_share": 0.65,
-    "ios_share": 0.35,
     "channels": ["organic", "meta", "tiktok", "direct"],
-    "channel_weights": [0.15, 0.45, 0.25, 0.15],
-    "utm_mappings": {
+    "utm_maps": {
         "organic": {
             "source": ["google", "bing", "yahoo", "duckduckgo"],
             "source_weights": [0.95, 0.03, 0.01, 0.01],
@@ -62,9 +59,8 @@ SIM_CONFIG = {
     "diurnal_behavior_weights": [0.25, 0.25, 0.50],
     "session_base_max_seconds": 300,
     "session_base_min_seconds": 10,
-    "os_distribution": ["android", "ios", "windows", "macos"],
-    "os_weights": [0.40, 0.25, 0.20, 0.15],
-    "os_by_income": {
+    "os_types": ["android", "ios", "windows", "macos"],
+    "os_weights_by_income": {
         "low": [0.36, 0.26, 0.22, 0.16],
         "mid": [0.32, 0.22, 0.26, 0.20],
         "high": [0.25, 0.30, 0.25, 0.20],
