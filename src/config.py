@@ -156,9 +156,8 @@ SIM_CONFIG = {
         "cash_payments",
         "buy_now_pay_later",
     ],
-    "payment_type_weights": [0.35, 0.21, 0.16, 0.13, 0.11, 0.03, 0.01],
     "income_payment_thresholds": [0.5, 1.5],
-    "payment_weights_by_income": {
+    "payment_type_weights_by_income": {
         "low": [0.45, 0.00, 0.00, 0.40, 0.00, 0.10, 0.05],
         "mid": [0.35, 0.10, 0.05, 0.25, 0.05, 0.05, 0.15],
         "high": [0.20, 0.45, 0.20, 0.05, 0.05, 0.00, 0.05],
@@ -167,7 +166,6 @@ SIM_CONFIG = {
     "outlier_rate_session_duration": 0.01,
     "outlier_duration_multiplier": 10,
     "outlier_rate_item_price": 0.005,
-    "outlier_price_multiplier": 100,
     "channel_weights_by_literacy": {
         "low": [0.50, 0.20, 0.25, 0.05],
         "mid": [0.38, 0.32, 0.18, 0.12],
@@ -175,7 +173,6 @@ SIM_CONFIG = {
     },
     "literacy_thresholds": [0.33, 0.67],
     "payday_dates": [15, 30],
-    "payday_boost": 1.3,
     "funnel_view_item_literacy_effect": 0.08,
     "funnel_view_item_mobile_penalty": 0.05,
     "funnel_checkout_trust_effect": 0.15,

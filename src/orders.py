@@ -22,7 +22,7 @@ def generate_orders(
     income_tier[income < income_thresholds[0]] = "low"
     income_tier[income >= income_thresholds[1]] = "high"
 
-    income_tier_names = list(SIM_CONFIG["payment_weights_by_income"].keys())
+    income_tier_names = list(SIM_CONFIG["payment_type_weights_by_income"].keys())
     payment_type = np.empty(num_purchases, dtype=object)
 
     for tier in income_tier_names:
