@@ -26,7 +26,6 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
     user_id_fk = np.repeat(user_data["user_id"], sessions_per_user)
     session_number = pd.Series(user_id_fk).groupby(user_id_fk).cumcount() + 1
 
-    # assigns acquisition channel, NOTE: based on digital_literacy
     literacy = np.repeat(user_data["latent_digital_literacy"], sessions_per_user)
     thresholds = SIM_CONFIG["literacy_thresholds"]
     literacy_tier = np.full(total_sessions, "mid", dtype=object)
@@ -127,7 +126,6 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
     )
     session_start_time = pd.to_datetime(session_start_time)
 
-    # session duration | NOTE: exponential decay is based on digital_literacy
     latent_digital_literacy = np.repeat(
         user_data["latent_digital_literacy"], sessions_per_user
     )
@@ -150,7 +148,6 @@ def generate_sessions(user_data: dict, rng: np.random.Generator):
         session_duration_seconds, unit="s"
     )
 
-    # NOTE: generated outliers for duration seconds
     outlier_mask = (
         rng.random(size=total_sessions) < SIM_CONFIG["outlier_rate_session_duration"]
     )
