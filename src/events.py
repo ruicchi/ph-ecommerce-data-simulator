@@ -273,8 +273,8 @@ def _events_worker(session_data, rng, events_config) -> pd.DataFrame:
     vi_probs_matrix = np.tile(vi_base, (n_sessions, 1))
     vi_probs_matrix[:, 0] += literacy_effect * literacy_arr
     vi_probs_matrix[:, 4] -= literacy_effect * literacy_arr
-    vi_probs_matrix[is_mobile_arr, 0] += mobile_penalty
-    vi_probs_matrix[is_mobile_arr, 4] -= mobile_penalty
+    vi_probs_matrix[is_mobile_arr, 0] -= mobile_penalty
+    vi_probs_matrix[is_mobile_arr, 4] += mobile_penalty
     vi_probs_matrix = np.clip(vi_probs_matrix, 0.001, 0.999)
     vi_probs_matrix /= vi_probs_matrix.sum(axis=1, keepdims=True)
 
@@ -344,9 +344,6 @@ def _events_worker(session_data, rng, events_config) -> pd.DataFrame:
                 current_state = _DROP_OFF
                 continue
 
-            if current_state == _DROP_OFF:
-                break
-
             # Extremely fast state transition (No math required inside the loop!)
             if current_state == _VIEW_ITEM:
                 next_states = vi_states
@@ -366,7 +363,7 @@ def _events_worker(session_data, rng, events_config) -> pd.DataFrame:
                     current_state = next_states[j]
                     break
 
-            current_time += int(rng.exponential(scale=average_wait)) * 1_000_000_000
+            current_time += int(rng.exponential(scale=average_wait) * 1_000_000_000)
 
     # ==========================================
     # FINAL DATAFRAME ASSEMBLY
